@@ -206,10 +206,13 @@
       const card = this.shell(it, `Which component completes <b class="py" style="color:var(--accent)">${it.py[it.t]}</b>? <span class="muted" style="font:italic 400 19px var(--font-display)">“${it.en}”</span>`);
       const ctx = { q: { word: it.word, py: it.py, t: it.t, miss: it.miss } };
       ctx.tiles = X().wordTiles(it.word, it.py, it.t, it.miss);
-      $(".ch-center", card).appendChild(ctx.tiles.el);
+      // The hint button hangs off the side of the tiles, so toggling it never re-centres (moves) them.
+      const anchor = html(`<div class="hint-anchor"></div>`);
+      anchor.appendChild(ctx.tiles.el);
+      $(".ch-center", card).appendChild(anchor);
       const hb = html(`<button class="hint-btn" type="button" aria-pressed="false" title="Show where the missing piece goes (H)">${I.bulb}<span>Hint</span></button>`);
       hb.addEventListener("click", () => X().setHint(ctx.tiles, hb));
-      $(".ch-center", card).appendChild(hb);
+      anchor.appendChild(hb);
       App.onKey((e) => { if (card.isConnected && !card.dataset.done && e.key.toLowerCase() === "h") { X().setHint(ctx.tiles, hb); return true; } return false; });
       const ids = it.fixed || shuffle([it.comp, ...distractors(it.comp, 3)]);
       const btns = ids.map((id, k) => {

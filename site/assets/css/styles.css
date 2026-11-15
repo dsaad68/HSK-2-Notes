@@ -342,9 +342,10 @@ main.view { min-height: calc(100vh - var(--topbar-h)); }
   opacity: 0; transition: opacity 0.8s;
 }
 .stage.is-joined::before { opacity: 1; }
-.stage-grid { position: absolute; inset: 9%; }
+/* The grid is a 76% square raised toward the top, leaving a clear band below for the caption. */
+.stage-grid { position: absolute; inset: 6% 12% 18% 12%; }
 .stage-layer {
-  position: absolute; inset: 9%;
+  position: absolute; inset: 6% 12% 18% 12%;
   transition: transform 1s var(--ease-spring), opacity 0.6s;
   will-change: transform;
 }
@@ -363,7 +364,7 @@ main.view { min-height: calc(100vh - var(--topbar-h)); }
 .stage-label.is-rest i { background: var(--ink); }
 .stage-label .han { font-size: 17px; }
 .stage-caption {
-  position: absolute; left: 0; right: 0; bottom: 5.5%; z-index: 3;
+  position: absolute; left: 0; right: 0; bottom: 6.5%; z-index: 3;
   display: flex; justify-content: center; align-items: baseline; gap: 12px;
   opacity: 0; transform: translateY(10px);
   transition: opacity 0.5s, transform 0.6s var(--ease-out);
@@ -796,6 +797,10 @@ main.view { min-height: calc(100vh - var(--topbar-h)); }
   opacity: 0.75; transition: opacity 0.2s, background 0.2s, color 0.2s, transform 0.2s var(--ease-spring);
 }
 .hint-btn svg { width: 16px; height: 16px; }
+.hint-btn { min-width: 112px; justify-content: center; } /* fixed width: "Hint" ↔ "Hide hint" doesn't shift anything */
+.hint-anchor { position: relative; }
+.hint-anchor > .hint-btn { position: absolute; left: calc(100% + 16px); top: 50%; transform: translateY(-50%); }
+.hint-anchor > .hint-btn:active { transform: translateY(-50%) scale(0.95); }
 .hint-btn:hover, .qrow.is-active .hint-btn { opacity: 1; }
 .hint-btn:active { transform: scale(0.95); }
 .hint-btn[aria-pressed="true"] { opacity: 1; color: #fff; background: var(--gold); box-shadow: none; }
@@ -1095,8 +1100,12 @@ footer.foot a:hover { color: var(--ink); }
   .qrow { grid-template-columns: 30px auto 1fr auto; }
   .qno { font-size: 18px; }
   .qrow.is-example .qno { font-size: 13px; }
-  .hint-btn { padding: 0 8px; }
+  .hint-btn { padding: 0 8px; min-width: 0; }
   .hint-btn span { display: none; }
+  .hint-anchor { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .hint-anchor > .hint-btn { position: static; transform: none; }
+  .hint-anchor > .hint-btn span { display: inline; }
+  .hint-anchor > .hint-btn { min-width: 112px; padding: 0 12px 0 9px; }
   .ans-box { width: 48px; height: 48px; font-size: 24px; }
   .opt { height: 76px; border-radius: 16px; }
   .opt-glyph { width: 52px; height: 52px; }
