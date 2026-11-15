@@ -78,7 +78,6 @@
                 <button data-v="exam" aria-pressed="${mode === "exam"}">Exam mode</button>
               </div>
               <div class="btn-row">
-                <button class="btn btn-sm btn-ghost" data-orig>${I.image} Original page</button>
                 <button class="btn btn-sm btn-ghost" data-reset>${I.reset} Reset</button>
                 ${mode === "exam" ? `<button class="btn btn-sm btn-accent" data-submit disabled>Check answers</button>` : ""}
               </div>
@@ -101,7 +100,6 @@
 
       App.seg($(".seg", root), (v) => { App.store.setting("examMode", v); App.refresh(); });
       $("[data-reset]", root).addEventListener("click", () => App.refresh());
-      $("[data-orig]", root).addEventListener("click", () => App.lightbox(`assets/scans/questions/${n}.webp`, `Original exam page · set ${n}`));
       this.setup(root, S, mode);
       return root;
     },

@@ -21,7 +21,6 @@
       const prev = list[(k - 1 + list.length) % list.length], next = list[(k + 1) % list.length];
       const P = H.POSITIONS[r.pos];
       const nStrokes = r.src[1].length;
-      const refs = App.examRefs(r.id);
 
       const root = html(`<div class="wrap">
         <div class="crumbs">
@@ -69,8 +68,6 @@
             ${r.tip ? `<div class="callout">${I.bulb}<div>${r.tip}</div></div>` : ""}
             <div class="detail-actions">
               <button class="btn btn-sm" data-go="write">${I.pen} Practise writing</button>
-              ${r.isExtra ? "" : `<button class="btn btn-sm" data-scan>${I.image} Textbook page</button>`}
-              ${refs.length ? `<button class="btn btn-sm btn-ghost" data-go="exam">${I.target} In the exam (${refs.length})</button>` : ""}
             </div>
             ${window.HSK_ORIGINS && HSK_ORIGINS[r.id] ? `<div class="card memo">
               <div class="memo-art" role="button" tabindex="0" aria-label="Replay the picture of ${r.from.en}" title="Replay"></div>
@@ -104,7 +101,10 @@
 
         <section class="section" style="padding-top:8px">
           <div class="section-head"><div><span class="eyebrow">字族 · Family</span><h2 class="title-md" style="margin-top:10px">More characters with ${r.name}</h2></div><p class="muted">Tap one to hear it.</p></div>
-          <div class="family">${Array.from(r.family).map((c) => `<button class="fam han" data-say="${c}" aria-label="${c}">${c}</button>`).join("")}</div>
+          <div class="family">${Array.from(r.family).map((c) => {
+            const [py, en] = H.FAMILY_INFO[c] || ["", ""];
+            return `<button class="fam" data-say="${c}" aria-label="${c} ${py}, ${en}"><b class="han">${c}</b><span class="py">${py}</span><small>${en}</small></button>`;
+          }).join("")}</div>
         </section>
 
         <section class="section" id="sec-write" style="padding-top:8px">
@@ -130,14 +130,6 @@
             </div>
           </div>
         </section>
-
-        ${refs.length ? `<section class="section" id="sec-exam" style="padding-top:8px">
-          <div class="section-head"><div><span class="eyebrow">考 · In the exam</span><h2 class="title-md" style="margin-top:10px">Where ${r.name} is the answer</h2></div></div>
-          <div class="exam-refs">${refs.map(({ set, q }) => {
-            const w = Array.from(q.word).map((c, i) => (i === q.t ? `<b>${c}</b>` : c)).join("");
-            return `<a class="exam-ref" href="#/practice/${set}"><div><span class="han">${w}</span><small>${q.py.join(" ")} · ${q.en}</small></div><span class="badge">Set ${set} · Q${q.no}</span></a>`;
-          }).join("")}</div>
-        </section>` : ""}
       </div>`);
 
       this.r = r;
@@ -151,8 +143,6 @@
       $$("[data-go]", root).forEach((b) => b.addEventListener("click", () => {
         const t = $("#sec-" + b.dataset.go, root); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
       }));
-      const scan = $("[data-scan]", root);
-      if (scan) scan.addEventListener("click", () => App.lightbox(`assets/scans/radicals/${r.lesson}.webp`, `Lesson ${r.lesson} · 学习偏旁知识，认读例字`));
 
       App.onKey((e) => {
         if (e.key === "ArrowLeft" && e.shiftKey) { App.go("#/learn/" + prev.id); return true; }

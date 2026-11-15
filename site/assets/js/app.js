@@ -54,16 +54,10 @@
     const g = H.LOOKALIKES.filter((l) => l.ids.includes(id));
     return [...new Set(g.flatMap((l) => l.ids))].filter((x) => x !== id);
   };
-  // Questions in the 15 exam sets whose answer is this component
-  App.examRefs = (id) => {
-    const out = [];
-    for (const s of H.SETS) for (const q of s.qs) if (s.opts[q.ans] === id) out.push({ set: s.n, q });
-    return out;
-  };
 
   /* ---------------- store ---------------- */
   const KEY = "hsk2-radicals-v1";
-  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, settings: { theme: null, sound: true, speed: 1, atlas: "lessons", examMode: "learn" } });
+  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, settings: { theme: "light", sound: false, speed: 1, atlas: "lessons", examMode: "learn" } });
   let state = blank();
   try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(blank(), JSON.parse(raw)); state.settings = Object.assign(blank().settings, state.settings); } catch (e) { /* storage unavailable */ }
   // Keep several open tabs in sync (otherwise one tab would overwrite another's progress).
@@ -87,14 +81,11 @@
   };
 
   /* ---------------- theme ---------------- */
+  // Light by default; dark only when the learner switches it on.
   function applyTheme() {
-    const t = state.settings.theme;
-    if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme", state.settings.theme === "dark" ? "dark" : "light");
   }
-  App.isDark = () => {
-    const t = state.settings.theme;
-    return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
-  };
+  App.isDark = () => state.settings.theme === "dark";
   applyTheme();
 
   /* ---------------- speech ---------------- */
@@ -150,22 +141,11 @@
     win() { [523, 587, 659, 784, 880, 1047].forEach((f, i) => tone(f, i * 0.085, 0.5, "sine", 0.05)); knock(0, 0.15); }
   };
 
-  /* ---------------- toast / lightbox ---------------- */
+  /* ---------------- toast ---------------- */
   App.toast = (msg) => {
     const root = $(".toast-root"); if (!root) return;
     const t = html(`<div class="toast">${msg}</div>`);
     root.appendChild(t); setTimeout(() => t.remove(), 2700);
-  };
-  App.lightbox = (src, caption) => {
-    const lb = html(`<div class="lightbox" role="dialog" aria-modal="true" aria-label="${caption}">
-      <button class="close" aria-label="Close">${App.icon.x}</button>
-      <figure><img src="${src}" alt="${caption}"><figcaption>${caption}</figcaption></figure></div>`);
-    const close = () => { lb.remove(); document.removeEventListener("keydown", onKey); };
-    const onKey = (e) => { if (e.key === "Escape") close(); };
-    lb.addEventListener("click", (e) => { if (e.target === lb || e.target.closest(".close")) close(); });
-    document.addEventListener("keydown", onKey);
-    document.body.appendChild(lb);
-    $(".close", lb).focus();
   };
 
   /* ---------------- ink burst celebration ---------------- */
@@ -227,7 +207,6 @@
   document.addEventListener("keydown", (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target && e.target.matches && e.target.matches("input, textarea, select")) return;
-    if ($(".lightbox")) return;
     for (const fn of scope.keys) if (fn(e) === true) { e.preventDefault(); break; }
   });
 

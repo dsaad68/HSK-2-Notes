@@ -57,7 +57,7 @@
         { ch: "打", py: "dǎ", en: "to hit; to make (a call)", word: "打电话", wpy: ["dǎ", "diàn", "huà"], t: 0, wen: "to make a phone call", idx: [0, 1, 2] },
         { ch: "接", py: "jiē", en: "to receive; to pick up", word: "接电话", wpy: ["jiē", "diàn", "huà"], t: 0, wen: "to answer the phone", idx: [0, 1, 2] }
       ],
-      family: "打接找把拿报" },
+      family: "打接找把换报" },
 
     { id: "ice", lesson: 1, glyph: "冫", name: "两点水", py: "liǎngdiǎnshuǐ", en: "two-dot water",
       from: { ch: "冰", py: "bīng", en: "ice" }, pos: "left", src: ["冷", [0, 1]],
@@ -623,5 +623,55 @@
     { ch: "球", py: "qiú", en: "ball", rad: [0, 1, 2, 3], radLabel: "王 jade → meaning", restLabel: "求 qiú → sound", axis: "x" }
   ];
 
-  window.HSK = { STROKES, POSITIONS, RADICALS, EXTRAS, SETS, EXAMPLE_Q, LOOKALIKES, SHOWCASE };
+  // Pinyin + short meaning for every "family" character shown on the radical pages.
+  const FAMILY_INFO = {
+    "打": ["dǎ", "to hit; to make (a call)"], "接": ["jiē", "to receive; to pick up"], "找": ["zhǎo", "to look for"],
+    "把": ["bǎ", "to hold; (object marker)"], "换": ["huàn", "to change, exchange"], "报": ["bào", "newspaper; to report"],
+    "冷": ["lěng", "cold"], "次": ["cì", "time (occurrence)"], "准": ["zhǔn", "accurate; to allow"], "冰": ["bīng", "ice"], "决": ["jué", "to decide"],
+    "间": ["jiān", "room; between"], "问": ["wèn", "to ask"], "闻": ["wén", "to smell; news"], "闭": ["bì", "to close"],
+    "过": ["guò", "to pass; to spend (time)"], "远": ["yuǎn", "far"], "这": ["zhè", "this"], "还": ["hái", "still; also"],
+    "送": ["sòng", "to give; to see off"], "进": ["jìn", "to enter"], "边": ["biān", "side"], "道": ["dào", "road; way"], "近": ["jìn", "near"],
+    "汉": ["hàn", "Han (Chinese)"], "洗": ["xǐ", "to wash"], "没": ["méi", "not (have)"], "河": ["hé", "river"], "海": ["hǎi", "sea"],
+    "游": ["yóu", "to swim; to travel"], "泳": ["yǒng", "to swim"], "酒": ["jiǔ", "alcohol, wine"],
+    "家": ["jiā", "home; family"], "完": ["wán", "to finish"], "字": ["zì", "character"], "室": ["shì", "room"], "安": ["ān", "peaceful, safe"], "客": ["kè", "guest"],
+    "红": ["hóng", "red"], "绿": ["lǜ", "green"], "给": ["gěi", "to give"], "经": ["jīng", "to pass through"], "结": ["jié", "to tie, knot"], "级": ["jí", "grade, level"],
+    "场": ["chǎng", "field; place"], "块": ["kuài", "piece; yuan"], "地": ["dì", "ground, earth"], "城": ["chéng", "city; city wall"], "坏": ["huài", "bad; broken"],
+    "茶": ["chá", "tea"], "菜": ["cài", "vegetable; dish"], "花": ["huā", "flower; to spend"], "药": ["yào", "medicine"], "节": ["jié", "festival; section"],
+    "苹": ["píng", "apple (苹果)"], "英": ["yīng", "English (英语)"],
+    "店": ["diàn", "shop"], "床": ["chuáng", "bed"], "应": ["yīng", "should"], "座": ["zuò", "seat"], "度": ["dù", "degree"],
+    "笔": ["bǐ", "pen"], "第": ["dì", "(ordinal prefix)"], "等": ["děng", "to wait"], "笑": ["xiào", "to laugh, smile"], "篮": ["lán", "basket"], "答": ["dá", "to answer"],
+    "快": ["kuài", "fast; happy"], "忙": ["máng", "busy"], "懂": ["dǒng", "to understand"], "慢": ["màn", "slow"], "情": ["qíng", "feeling"], "怕": ["pà", "to be afraid"],
+    "跑": ["pǎo", "to run"], "踢": ["tī", "to kick"], "路": ["lù", "road"], "跳": ["tiào", "to jump"], "跟": ["gēn", "with; to follow"],
+    "往": ["wǎng", "toward"], "很": ["hěn", "very"], "得": ["dé", "to get (also particle de)"], "行": ["xíng", "to walk; OK"],
+    "饭": ["fàn", "meal; rice"], "饺": ["jiǎo", "dumpling"], "馆": ["guǎn", "hall (饭馆 restaurant)"], "饿": ["è", "hungry"], "饱": ["bǎo", "full (after eating)"],
+    "点": ["diǎn", "dot; o'clock"], "热": ["rè", "hot"], "然": ["rán", "so; like that"], "照": ["zhào", "to shine; photo"], "黑": ["hēi", "black"],
+    "校": ["xiào", "school"], "样": ["yàng", "kind; appearance"], "机": ["jī", "machine"], "楼": ["lóu", "building; floor"], "树": ["shù", "tree"], "椅": ["yǐ", "chair"],
+    "吃": ["chī", "to eat"], "喝": ["hē", "to drink"], "吗": ["ma", "(question particle)"], "呢": ["ne", "(particle)"], "吧": ["ba", "(suggestion particle)"],
+    "叫": ["jiào", "to call; to be called"], "听": ["tīng", "to listen"],
+    "词": ["cí", "word"], "试": ["shì", "to try; test"], "诉": ["sù", "to tell"], "说": ["shuō", "to speak"], "话": ["huà", "words, speech"],
+    "请": ["qǐng", "please; to invite"], "谢": ["xiè", "to thank"], "课": ["kè", "lesson, class"],
+    "昨": ["zuó", "yesterday"], "明": ["míng", "bright"], "时": ["shí", "time"], "晚": ["wǎn", "evening; late"], "晴": ["qíng", "sunny"],
+    "他": ["tā", "he"], "体": ["tǐ", "body"], "你": ["nǐ", "you"], "们": ["men", "(plural suffix)"], "位": ["wèi", "(polite measure word)"],
+    "做": ["zuò", "to do; to make"], "住": ["zhù", "to live (somewhere)"],
+    "病": ["bìng", "illness"], "疼": ["téng", "to ache"],
+    "铁": ["tiě", "iron"], "钱": ["qián", "money"], "错": ["cuò", "wrong"], "钟": ["zhōng", "clock; bell"],
+    "阴": ["yīn", "overcast; shade"], "院": ["yuàn", "courtyard"], "阳": ["yáng", "sun; sunny side"], "队": ["duì", "team"],
+    "都": ["dōu", "all, both"], "那": ["nà", "that"], "部": ["bù", "part, section"], "邮": ["yóu", "post (邮局 post office)"],
+    "教": ["jiāo", "to teach"], "数": ["shù", "number"], "放": ["fàng", "to put; to let go"], "收": ["shōu", "to receive"],
+    "眼": ["yǎn", "eye"], "睡": ["shuì", "to sleep"], "睛": ["jīng", "eyeball"],
+    "站": ["zhàn", "to stand; station"],
+    "姐": ["jiě", "older sister"], "姓": ["xìng", "surname"], "奶": ["nǎi", "milk; grandma"], "妈": ["mā", "mom"], "她": ["tā", "she"],
+    "好": ["hǎo", "good"], "妹": ["mèi", "younger sister"],
+    "期": ["qī", "period of time"], "脑": ["nǎo", "brain"], "服": ["fú", "clothes; to serve"], "朋": ["péng", "friend"], "腿": ["tuǐ", "leg"], "脸": ["liǎn", "face"],
+    "别": ["bié", "don't; other"], "到": ["dào", "to arrive"], "刻": ["kè", "quarter (hour); to carve"],
+    "裤": ["kù", "trousers"], "衬": ["chèn", "lining (衬衫 shirt)"], "袜": ["wà", "socks"],
+    "球": ["qiú", "ball"], "玩": ["wán", "to play"], "现": ["xiàn", "now; to appear"], "班": ["bān", "class"],
+    "题": ["tí", "question; topic"],
+    "旁": ["páng", "side"], "房": ["fáng", "house; room"], "访": ["fǎng", "to visit"],
+    "名": ["míng", "name"], "多": ["duō", "many"], "外": ["wài", "outside"], "岁": ["suì", "years (of age)"],
+    "票": ["piào", "ticket"], "要": ["yào", "to want"],
+    "什": ["shén", "what (什么)"]
+  };
+
+  window.HSK = { STROKES, POSITIONS, RADICALS, EXTRAS, SETS, EXAMPLE_Q, LOOKALIKES, SHOWCASE, FAMILY_INFO };
 })();

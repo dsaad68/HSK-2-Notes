@@ -1,0 +1,4 @@
+# Source exam materials (scanned textbook & exam pages) stay local only
+exam-materials/
+
+.DS_Store

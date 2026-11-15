@@ -5,21 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>偏旁 Radicals — HSK 2 Writing</title>
   <meta name="description" content="Learn the 30 HSK 2 radicals with stroke-by-stroke animation and practise the HSK Exam Writing Section, Part 1: form characters from components.">
-  <meta name="theme-color" content="#f5eee1" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#13110e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5eee1">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='13' fill='%23c2392b'/%3E%3Cpath d='M22 18c0 10-3 20-7 28M28 16v32M28 24h20M38 24v24M30 36h16' stroke='%23fff6ee' stroke-width='4.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..500&family=Inter:wght@400..700&display=swap">
-  <link rel="stylesheet" href="assets/css/fonts.css?v=5">
-  <link rel="stylesheet" href="assets/css/styles.css?v=5">
-  <link rel="stylesheet" href="assets/css/course.css?v=5">
+  <link rel="stylesheet" href="assets/css/fonts.css?v=7">
+  <link rel="stylesheet" href="assets/css/styles.css?v=7">
+  <link rel="stylesheet" href="assets/css/course.css?v=7">
   <script>
-    // Apply the saved theme before first paint (no flash).
+    // Apply the theme before first paint (no flash). Light unless the learner chose dark.
+    var theme = "light";
     try {
       var s = JSON.parse(localStorage.getItem("hsk2-radicals-v1") || "{}");
-      if (s.settings && s.settings.theme) document.documentElement.setAttribute("data-theme", s.settings.theme);
+      if (s.settings && s.settings.theme === "dark") theme = "dark";
     } catch (e) {}
+    document.documentElement.setAttribute("data-theme", theme);
   </script>
 </head>
 <body>
@@ -38,7 +39,7 @@
       <a href="#/challenge" data-nav="challenge"><span class="nav-zh" aria-hidden="true">测</span>Challenge</a>
     </nav>
     <div class="top-actions">
-      <button class="icon-btn" id="sound-btn" aria-pressed="true" title="Sound effects"></button>
+      <button class="icon-btn" id="sound-btn" aria-pressed="false" title="Sound effects"></button>
       <button class="icon-btn" id="theme-btn" title="Theme"></button>
     </div>
   </header>
@@ -59,21 +60,21 @@
 
   <div class="toast-root" aria-live="polite"></div>
 
-  <script src="assets/js/data/hanzi-data.js?v=5"></script>
-  <script src="assets/js/data/content.js?v=5"></script>
-  <script src="assets/js/data/origins.js?v=5"></script>
-  <script src="assets/js/data/course.js?v=5"></script>
-  <script src="assets/vendor/hanzi-writer.min.js?v=5"></script>
-  <script src="assets/js/ink.js?v=5"></script>
-  <script src="assets/js/app.js?v=5"></script>
-  <script src="assets/js/art.js?v=5"></script>
-  <script src="assets/js/exam.js?v=5"></script>
-  <script src="assets/js/views/home.js?v=5"></script>
-  <script src="assets/js/views/course.js?v=5"></script>
-  <script src="assets/js/views/learn.js?v=5"></script>
-  <script src="assets/js/views/radical.js?v=5"></script>
-  <script src="assets/js/views/compare.js?v=5"></script>
-  <script src="assets/js/views/practice.js?v=5"></script>
-  <script src="assets/js/views/challenge.js?v=5"></script>
+  <script src="assets/js/data/hanzi-data.js?v=7"></script>
+  <script src="assets/js/data/content.js?v=7"></script>
+  <script src="assets/js/data/origins.js?v=7"></script>
+  <script src="assets/js/data/course.js?v=7"></script>
+  <script src="assets/vendor/hanzi-writer.min.js?v=7"></script>
+  <script src="assets/js/ink.js?v=7"></script>
+  <script src="assets/js/app.js?v=7"></script>
+  <script src="assets/js/art.js?v=7"></script>
+  <script src="assets/js/exam.js?v=7"></script>
+  <script src="assets/js/views/home.js?v=7"></script>
+  <script src="assets/js/views/course.js?v=7"></script>
+  <script src="assets/js/views/learn.js?v=7"></script>
+  <script src="assets/js/views/radical.js?v=7"></script>
+  <script src="assets/js/views/compare.js?v=7"></script>
+  <script src="assets/js/views/practice.js?v=7"></script>
+  <script src="assets/js/views/challenge.js?v=7"></script>
 </body>
 </html>
