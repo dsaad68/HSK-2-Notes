@@ -872,6 +872,16 @@ main.view { min-height: calc(100vh - var(--topbar-h)); }
 .exam-page .qrows { gap: 2px; margin-top: 4px; }
 .exam-page .qrow { grid-template-columns: 52px auto minmax(0, 1fr) auto; gap: 16px; padding: 5px 12px; border-radius: 16px; }
 .exam-page .qrow .explain, .exam-page .qrow .hint-line { display: none; }
+/* English meanings stay hidden (even after answering) until "Show meaning" is on. */
+.exam-page .qrow.is-solved .q-meta .en, .exam-page .qrow.is-example .q-meta .en { opacity: 0; transform: translateY(4px); }
+.exam-page.show-meaning .qrow .q-meta .en { opacity: 1; transform: none; }
+.meaning-toggle {
+  display: inline-flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px 0 6px; border-radius: 11px;
+  font-size: 14px; font-weight: 500; color: var(--ink-2); transition: background 0.2s, color 0.2s;
+}
+.meaning-toggle:hover { background: var(--surface-3); color: var(--ink); }
+.meaning-toggle .switch { transform: scale(0.85); }
+.meaning-toggle[aria-pressed="true"] { color: var(--ink); }
 .exam-page .qno { font-size: 20px; }
 .exam-page .qrow.is-example .qno { font-size: 16px; }
 .exam-page .ans-box { width: 50px; height: 50px; font-size: 25px; }

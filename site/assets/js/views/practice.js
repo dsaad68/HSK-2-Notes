@@ -59,7 +59,8 @@
       const S = H.SETS[n - 1];
       if (!S) return html(`<div class="wrap page-head"><h1 class="title-lg">Set not found</h1><p class="lede"><a href="#/practice" style="color:var(--accent)">All sets</a></p></div>`);
       const mode = App.store.setting("examMode") || "learn";
-      const root = html(`<div class="wrap exam-page">
+      const showMeaning = !!App.store.setting("showMeaning");
+      const root = html(`<div class="wrap exam-page${showMeaning ? " show-meaning" : ""}">
         <div class="exam-top">
           <div><span class="eyebrow">Exam set ${n} of 15</span><h1 class="exam-title">HSK Exam Writing Section <span>· Part 1</span></h1></div>
           <nav class="set-dots" aria-label="Sets">${H.SETS.map((s) => {
@@ -77,6 +78,7 @@
                 <button data-v="learn" aria-pressed="${mode === "learn"}">Learn mode</button>
                 <button data-v="exam" aria-pressed="${mode === "exam"}">Exam mode</button>
               </div>
+              <button class="meaning-toggle" type="button" aria-pressed="${showMeaning}" title="Show the English meaning of each word (M)"><span class="switch"></span>Show meaning</button>
               <div class="btn-row">
                 <button class="btn btn-sm btn-ghost" data-reset>${I.reset} Reset</button>
                 ${mode === "exam" ? `<button class="btn btn-sm btn-accent" data-submit disabled>Check answers</button>` : ""}
@@ -90,7 +92,7 @@
               <div class="side-item is-tip">
                 <b>How to answer</b>
                 <ol><li>Read the pinyin and recognise the word.</li><li>Ask what the missing character is about.</li><li>Pick the radical with that meaning.</li><li>Eliminate: A, B and C are each used once; D (十) is only the example.</li></ol>
-                <div class="keys"><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> question</span><span><kbd>A</kbd>–<kbd>D</kbd> answer</span><span><kbd>H</kbd> hint</span><span>or drag &amp; drop</span></div>
+                <div class="keys"><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> question</span><span><kbd>A</kbd>–<kbd>D</kbd> answer</span><span><kbd>H</kbd> hint</span><span><kbd>M</kbd> meaning</span><span>or drag &amp; drop</span></div>
                 <p class="side-note">Stuck? Press <b>Hint</b> on a question to see where its missing piece goes.</p>
               </div>
             </div>
@@ -100,6 +102,16 @@
 
       App.seg($(".seg", root), (v) => { App.store.setting("examMode", v); App.refresh(); });
       $("[data-reset]", root).addEventListener("click", () => App.refresh());
+      // "Show meaning" switch: off by default, remembered across sets and visits.
+      const mt = $(".meaning-toggle", root);
+      this.toggleMeaning = () => {
+        const on = !App.store.setting("showMeaning");
+        App.store.setting("showMeaning", on);
+        mt.setAttribute("aria-pressed", on);
+        root.classList.toggle("show-meaning", on);
+        App.sfx.tick();
+      };
+      mt.addEventListener("click", this.toggleMeaning);
       this.setup(root, S, mode);
       return root;
     },
@@ -294,6 +306,7 @@
         const k = e.key.toLowerCase();
         if (["1", "2", "3"].includes(k)) { setActive(+k - 1); rows[+k - 1].row.focus({ preventScroll: true }); return true; }
         if (["a", "b", "c", "d"].includes(k)) { const L = k.toUpperCase(); answer(st.active, L, $(".opt-glyph", opts[L])); return true; }
+        if (k === "m") { App.views.set.toggleMeaning(); return true; }
         if (k === "h" && !st.done) { const r = rows[st.active]; if (r.toggleHint && !st.solved[st.active]) r.toggleHint(); return true; }
         if (e.key === "Enter" && submitBtn && !submitBtn.disabled) { submit(); return true; }
         return false;
