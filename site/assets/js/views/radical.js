@@ -72,6 +72,14 @@
               ${r.isExtra ? "" : `<button class="btn btn-sm" data-scan>${I.image} Textbook page</button>`}
               ${refs.length ? `<button class="btn btn-sm btn-ghost" data-go="exam">${I.target} In the exam (${refs.length})</button>` : ""}
             </div>
+            ${window.HSK_ORIGINS && HSK_ORIGINS[r.id] ? `<div class="card memo">
+              <div class="memo-art" role="button" tabindex="0" aria-label="Replay the picture of ${r.from.en}" title="Replay"></div>
+              <div class="memo-body">
+                <span class="memo-k">${I.bulb} Memory hook</span>
+                <p class="memo-hook">${HSK_ORIGINS[r.id].hook}</p>
+                <div class="means">${HSK_ORIGINS[r.id].means.map((m) => `<span class="chip">${m}</span>`).join("")}</div>
+              </div>
+            </div>` : ""}
           </div>
         </section>
 
@@ -79,11 +87,7 @@
           <div class="section-head"><div><span class="eyebrow">源 · Origin</span><h2 class="title-md" style="margin-top:10px">From a picture to ${r.name}</h2></div>
             <button class="btn btn-sm btn-ghost" data-evo-replay>${I.replay} Replay</button></div>
           <div class="card evo" aria-label="How ${r.name} evolved"></div>
-          <div class="origin-grid">
-            <div class="card origin-story"><h3>Where it comes from</h3><p>${HSK_ORIGINS[r.id].story}</p>
-              <h4>What it means in characters</h4><div class="means">${HSK_ORIGINS[r.id].means.map((m) => `<span class="chip">${m}</span>`).join("")}</div></div>
-            <div class="card origin-hook"><span class="hook-ico">${I.bulb}</span><h3>Memory hook</h3><p>${HSK_ORIGINS[r.id].hook}</p></div>
-          </div>
+          <div class="card origin-story"><h3>Where it comes from</h3><p>${HSK_ORIGINS[r.id].story}</p></div>
           <div class="card links">
             <h3>Does the meaning fit your characters?</h3>
             <p>Not every character keeps its radical's meaning. Here's how each example really relates to ${r.name}.</p>
@@ -289,9 +293,16 @@
       sPic.art = App.art.make(r.id, "art", { label: r.from.en });
       sPic.card.appendChild(sPic.art);
 
-      const sEarly = addStep("Ancient form", o.rotate ? "stylised · later turned upright" : "stylised", "is-early");
-      sEarly.art = App.art.make(r.id, "early", { label: "ancient form" });
-      sEarly.card.appendChild(sEarly.art);
+      // Memory card in the hero: the picture draws itself; click to replay.
+      const memo = $(".memo-art", root);
+      if (memo) {
+        const a = App.art.make(r.id, "art", { label: r.from.en });
+        memo.appendChild(a);
+        const replay = () => App.art.draw(a, 0.9);
+        memo.addEventListener("click", replay);
+        memo.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); replay(); } });
+        App.whenVisible(memo, () => App.later(replay, 500));
+      }
 
       let sFull = null;
       if (r.from.ch !== r.glyph && Ink.data(r.from.ch)) {

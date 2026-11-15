@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Learn — the radical atlas (by textbook lesson or by position)
+   Learn — the radical atlas: one grid, every card labelled with level & lesson
    ========================================================================== */
 (function () {
   "use strict";
@@ -18,7 +18,11 @@
 
   function card(r, delay) {
     const studied = App.store.isStudied(r.id);
-    const c = html(`<a class="rad-card reveal" href="#/learn/${r.id}" style="--d:${delay || 0}ms" aria-label="${r.name} ${r.py}, ${r.en}">
+    const tags = r.isExtra
+      ? `<span class="rad-tag is-level">HSK 2</span><span class="rad-tag">Exam option</span>`
+      : `<span class="rad-tag is-level">HSK 2</span><span class="rad-tag">Lesson ${r.lesson} <span class="han">第${LESSON_ZH[r.lesson - 1]}课</span></span>`;
+    const c = html(`<a class="rad-card reveal" href="#/learn/${r.id}" style="--d:${delay || 0}ms" aria-label="${r.name} ${r.py}, ${r.en}${r.isExtra ? "" : ", HSK 2 lesson " + r.lesson}">
+      <div class="rad-tags">${tags}</div>
       <div class="rad-card-top">
         <div class="glyph-box" style="view-transition-name: rad-${r.id}"></div>
         <div>
@@ -47,22 +51,17 @@
     title: "Learn the radicals",
     render() {
       const st = App.stats();
-      const mode = App.store.setting("atlas") || "lessons";
       const root = html(`<div class="wrap">
         <header class="page-head">
           <span class="eyebrow">学 · Learn</span>
           <h1 class="title-lg">The 30 radicals<span class="zh-sub">偏旁</span></h1>
-          <p class="lede">Same order as your textbook: 15 lessons with two radicals each. Hover a card to watch it being written, and open it for stroke order, examples and handwriting practice.</p>
+          <p class="lede">In textbook order. Each card shows its level and lesson. Hover a card to watch it being written, and open it for stroke order, its origin, examples and handwriting practice.</p>
         </header>
         <div class="atlas-bar">
-          <div class="seg" role="group" aria-label="Arrange by">
-            <button data-v="lessons" aria-pressed="${mode === "lessons"}">By lesson</button>
-            <button data-v="positions" aria-pressed="${mode === "positions"}">By position</button>
-          </div>
-          <div class="filters" ${mode === "lessons" ? "hidden" : ""}></div>
+          <div class="filters" role="group" aria-label="Filter by position"></div>
           <div class="atlas-progress"><span>${st.studied} / 30 studied</span><div class="bar-track"><div class="bar-fill" style="width:0%"></div></div></div>
         </div>
-        <div class="atlas-body"></div>
+        <div class="rad-grid atlas-grid"></div>
         <section class="section">
           <div class="section-head"><div><span class="eyebrow">Also in the exam</span><h2 class="title-md" style="margin-top:10px">8 more components from the answer options</h2></div>
           <p class="muted" style="max-width:440px">These come up as options in the 15 exam sets but aren't among the textbook's 30. They're worth a look too.</p></div>
@@ -70,7 +69,7 @@
         </section>
       </div>`);
 
-      const body = $(".atlas-body", root);
+      const grid = $(".atlas-grid", root);
       const filtersEl = $(".filters", root);
       let filter = "all";
 
@@ -82,32 +81,11 @@
       });
 
       const draw = () => {
-        const m = App.store.setting("atlas");
-        body.replaceChildren();
-        filtersEl.hidden = m !== "positions";
-        if (m === "positions") {
-          const f = FILTERS.find((x) => x.v === filter);
-          const grid = html(`<div class="rad-grid"></div>`);
-          H.RADICALS.filter((r) => !f.pos || f.pos.includes(r.pos)).forEach((r, i) => grid.appendChild(card(r, (i % 8) * 50)));
-          body.appendChild(grid);
-        } else {
-          const wrap = html(`<div class="lessons"></div>`);
-          for (let L = 1; L <= 15; L++) {
-            const rs = H.RADICALS.filter((r) => r.lesson === L);
-            const les = html(`<section class="lesson reveal" style="--d:${((L - 1) % 2) * 80}ms">
-              <div class="lesson-head"><h3>Lesson ${L} <span class="han">第${LESSON_ZH[L - 1]}课</span></h3>
-                <button class="btn btn-sm btn-ghost" data-scan="${L}">${App.icon.image} Textbook page</button></div>
-              <div class="lesson-cards"></div></section>`);
-            rs.forEach((r, i) => $(".lesson-cards", les).appendChild(card(r, i * 70)));
-            $("[data-scan]", les).addEventListener("click", () => App.lightbox(`assets/scans/radicals/${L}.webp`, `Lesson ${L} · 学习偏旁知识，认读例字`));
-            wrap.appendChild(les);
-          }
-          body.appendChild(wrap);
-        }
-        App.reveal(body);
+        const f = FILTERS.find((x) => x.v === filter);
+        grid.replaceChildren();
+        H.RADICALS.filter((r) => !f.pos || f.pos.includes(r.pos)).forEach((r, i) => grid.appendChild(card(r, (i % 8) * 45)));
+        App.reveal(grid);
       };
-
-      App.seg($(".seg", root), (v) => { App.store.setting("atlas", v); draw(); });
       draw();
 
       const ex = $(".extras-grid", root);

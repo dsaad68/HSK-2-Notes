@@ -85,7 +85,7 @@
     {
       id: "exam", zh: "考试", title: "Using radicals in the exam",
       body: [
-        "In <b class=\"han\">第25–27题</b> you see three words, each with one character missing a piece, and four components A–D.",
+        "In the <b>HSK Exam Writing Section, Part 1</b> (<b class=\"han\">书写 第一部分</b>) you see three words, each with one character missing a piece, and four components A–D.",
         "<b>1.</b> Read the pinyin and recognise the word. <b>2.</b> Ask what the missing character is about. <b>3.</b> Pick the radical with that meaning. <b>4.</b> Eliminate: A, B and C are each used exactly once, and D (十) belongs to the example."
       ],
       takeaway: "Pinyin → word → meaning → radical → eliminate."

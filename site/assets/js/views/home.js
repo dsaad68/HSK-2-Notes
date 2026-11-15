@@ -20,7 +20,7 @@
             <div class="hero-copy">
               <span class="eyebrow">HSK 2 · 书写 Writing · Part I</span>
               <h1 class="title-xl">Every character is built from <em>pieces</em>. Learn the pieces.</h1>
-              <p class="lede">In Questions 25–27 you see a character with one piece missing, and you pick the radical (偏旁) that completes it. This course covers the 30 radicals from your textbook, animated stroke by stroke, and then drills all 15 exam sets.</p>
+              <p class="lede">In the HSK Exam Writing Section, Part 1, you see a character with one piece missing, and you pick the radical (偏旁) that completes it. This course covers the 30 radicals from your textbook, animated stroke by stroke, and then drills all 15 exam sets.</p>
               <div class="btn-row">
                 <a class="btn btn-primary" href="#/course">Start the course ${App.icon.arrow}</a>
                 <a class="btn" href="#/learn">Browse the 30 radicals</a>
@@ -50,7 +50,7 @@
           </div>
           <div class="demo reveal">
             <div class="card demo-sheet">
-              <div class="sheet-instr"><span class="sq"></span><div><div class="han">第25–27题：根据部件组字。</div><p>Questions 25–27: Form Chinese characters using the given components.</p></div></div>
+              <div class="sheet-instr"><span class="sq"></span><div><div class="han">书写 第一部分：根据部件组字。</div><p>HSK Exam Writing Section, Part 1: form Chinese characters using the given components.</p></div></div>
               <div class="opts demo-opts"></div>
               <div class="qrows demo-rows"></div>
               <svg class="cursor" viewBox="0 0 26 26" aria-hidden="true"><path d="M4 2.5l17 9.2-7.4 1.6-3.6 6.9z" fill="#1e1a15" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
@@ -179,7 +179,7 @@
       X().fillSlot(ex.tiles, App.comp("ten"), true, "correct");
       X().stamp(ex.ans, "D", "is-example");
       rowsEl.appendChild(ex.row);
-      const rows = S.qs.map((q) => { const r = X().questionRow(q, { cell: 64 }); r.row.style.pointerEvents = "none"; rowsEl.appendChild(r.row); return r; });
+      const rows = S.qs.map((q) => { const r = X().questionRow(q, { cell: 64, hint: false }); r.row.style.pointerEvents = "none"; rowsEl.appendChild(r.row); return r; });
       const moveTo = (el) => {
         const a = sheet.getBoundingClientRect(), b = el.getBoundingClientRect();
         cursor.style.transform = `translate(${b.left - a.left + b.width * 0.55}px, ${b.top - a.top + b.height * 0.55}px)`;

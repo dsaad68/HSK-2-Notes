@@ -207,6 +207,10 @@
       const ctx = { q: { word: it.word, py: it.py, t: it.t, miss: it.miss } };
       ctx.tiles = X().wordTiles(it.word, it.py, it.t, it.miss);
       $(".ch-center", card).appendChild(ctx.tiles.el);
+      const hb = html(`<button class="hint-btn" type="button" aria-pressed="false" title="Show where the missing piece goes (H)">${I.bulb}<span>Hint</span></button>`);
+      hb.addEventListener("click", () => X().setHint(ctx.tiles, hb));
+      $(".ch-center", card).appendChild(hb);
+      App.onKey((e) => { if (card.isConnected && !card.dataset.done && e.key.toLowerCase() === "h") { X().setHint(ctx.tiles, hb); return true; } return false; });
       const ids = it.fixed || shuffle([it.comp, ...distractors(it.comp, 3)]);
       const btns = ids.map((id, k) => {
         const b = X().optionButton(LETTERS[k], App.comp(id));
@@ -220,6 +224,7 @@
         card.dataset.done = "1";
         const id = ids[k], comp = App.comp(id), ok = id === it.comp;
         btns.forEach((b) => (b.style.pointerEvents = "none"));
+        hb.style.visibility = "hidden";
         const ov = await X().fly($(".opt-glyph", btns[k]), ctx.tiles, comp, ok, "correct");
         if (!alive()) return;
         const ch = it.word[it.t];

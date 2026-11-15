@@ -19,7 +19,7 @@
           <div>
             <span class="eyebrow">课 · Course</span>
             <h1 class="title-lg">How radicals work<span class="zh-sub">偏旁课</span></h1>
-            <p class="lede">Nine short lessons. You'll see where radicals come from, the four ways characters are built, why radicals change shape, how to decode their names, and how all of it helps in Questions 25–27.</p>
+            <p class="lede">Nine short lessons. You'll see where radicals come from, the four ways characters are built, why radicals change shape, how to decode their names, and how all of it helps in the HSK Exam Writing Section, Part 1.</p>
             <div class="course-meta"><span class="chip">9 lessons</span><span class="chip">≈ 15 minutes</span><span class="chip chip-accent">A quick check in each lesson</span></div>
           </div>
           <div class="course-progress"><span class="cp-label"></span><div class="bar-track"><div class="bar-fill" style="width:0%"></div></div></div>
@@ -424,7 +424,7 @@
     /* ================= L9: try a real question ================= */
     v_exam(el) {
       const S = H.SETS[10], q = S.qs[0];
-      el.innerHTML = `<div class="live"><div class="sheet-instr"><span class="sq"></span><div><div class="han">第25–27题：根据部件组字。</div><p>Try a real question from exam set 11: click the component that completes the word.</p></div></div>
+      el.innerHTML = `<div class="live"><div class="sheet-instr"><span class="sq"></span><div><div class="han">书写 第一部分：根据部件组字。</div><p>Try a real question from exam set 11: click the component that completes the word.</p></div></div>
         <div class="opts"></div><div class="qrows"></div></div>
         <div class="course-cta"><a class="btn btn-accent" href="#/practice/1">Practise all 15 exam sets ${I.arrow}</a><a class="btn" href="#/challenge">Mixed challenge</a><a class="btn btn-ghost" href="#/learn">Review the 30 radicals</a></div>`;
       const X = App.exam;

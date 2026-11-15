@@ -241,14 +241,17 @@
       if (this.tip) this.tip.classList.remove("is-on");
     }
 
+    /** Stroke-number badges: added/removed one at a time, so existing badges don't re-animate. */
     _renderNumbers() {
       if (!this.numG) return;
-      this.numG.replaceChildren();
-      if (!this.o.numbers) return;
+      if (!this.o.numbers) { this.numG.replaceChildren(); this.numEls = {}; return; }
+      this.numEls = this.numEls || {};
       let n = 0;
       for (const i of this.idx) {
         n++;
-        if (!this.visible.has(i) && !(this._drawing === i)) continue;
+        const show = this.visible.has(i) || this._drawing === i;
+        if (!show) { if (this.numEls[i]) { this.numEls[i].remove(); delete this.numEls[i]; } continue; }
+        if (this.numEls[i]) continue;
         const m = this.d.m[i];
         const [x, y] = this.toScreen(m[0][0], m[0][1]);
         const [x2, y2] = this.toScreen((m[1] || m[0])[0], (m[1] || m[0])[1]);
@@ -258,6 +261,7 @@
         el("circle", { r: 40 }, g);
         const t = el("text", { "text-anchor": "middle", "dominant-baseline": "central", y: 2 }, g);
         t.textContent = n;
+        this.numEls[i] = g;
       }
     }
 

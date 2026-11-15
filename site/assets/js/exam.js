@@ -31,7 +31,8 @@
         const ink = App.ink(box, ch, { strokes: keep, grid: "cross", label: "incomplete character" });
         const b = Ink.bbox(d, miss), pad = 30;
         const pct = (v) => Math.max(0, Math.min(100, (v / 1024) * 100)).toFixed(2) + "%";
-        const gap = html(`<div class="gap" aria-hidden="true"><span class="gap-q">?</span></div>`);
+        // Like the real paper, the gap is invisible until the learner asks for a hint.
+        const gap = html(`<div class="gap${opts.showGap ? "" : " is-concealed"}" aria-hidden="true"><span class="gap-q">?</span></div>`);
         Object.assign(gap.style, { left: pct(b.x0 - pad), top: pct(b.y0 - pad), width: pct(b.w + 2 * pad), height: pct(b.h + 2 * pad) });
         // Put the "?" at the centroid of the missing strokes (e.g. bottom-left for 辶).
         let sx = 0, sy = 0, n = 0;
@@ -58,14 +59,33 @@
     const row = html(`<div class="qrow${ex ? " is-example" : ""}" data-no="${q.no}" ${ex ? "" : 'tabindex="0" role="button"'} aria-label="${ex ? "Example" : "Question " + q.no}">
         <div class="qno">${ex ? "例如" : q.no + "."}</div>
         <div class="q-word"></div>
-        <div class="q-meta"><div class="en">${q.en}</div></div>
+        <div class="q-meta">${!ex && opts.hint !== false ? `<button class="hint-btn" type="button" aria-pressed="false" title="Show where the missing piece goes (H)">${icon.bulb}<span>Hint</span></button>` : ""}<div class="en">${q.en}</div></div>
         <div class="ans-box" aria-live="polite"></div>
         <div class="hint-line"></div>
         <div class="explain"><div><div class="explain-inner"></div></div></div>
       </div>`);
     const tiles = wordTiles(q.word, q.py, q.t, q.miss, { cell: opts.cell });
     $(".q-word", row).appendChild(tiles.el);
-    return { row, tiles, q, ans: $(".ans-box", row), hint: $(".hint-line", row), explain: $(".explain-inner", row) };
+    const ctx = { row, tiles, q, ans: $(".ans-box", row), hint: $(".hint-line", row), explain: $(".explain-inner", row) };
+    const hb = $(".hint-btn", row);
+    if (hb) {
+      ctx.toggleHint = (on) => setHint(tiles, hb, on);
+      hb.addEventListener("click", () => ctx.toggleHint());
+    }
+    return ctx;
+  }
+
+  /** Reveal (or conceal again) where the missing piece goes, for one question only. */
+  function setHint(tiles, btn, on) {
+    if (!tiles.gap) return;
+    const show = on === undefined ? tiles.gap.classList.contains("is-concealed") : on;
+    tiles.gap.classList.toggle("is-concealed", !show);
+    if (btn) {
+      btn.setAttribute("aria-pressed", show);
+      btn.querySelector("span").textContent = show ? "Hide hint" : "Hint";
+    }
+    if (show && !App.reduceMotion()) tiles.gap.animate([{ transform: "scale(0.85)", opacity: 0 }, { transform: "scale(1.06)", opacity: 1, offset: 0.6 }, { transform: "none", opacity: 1 }], { duration: 450, easing: "cubic-bezier(.34,1.56,.64,1)" });
+    App.sfx.tick();
   }
 
   /** Put a component into the gap (no animation). exact = it is the true answer. */
@@ -162,7 +182,7 @@
 
   function hintFor(q, comp) {
     const ch = q.word[q.t];
-    if (comp.id === "ten") return `${icon.bulb}<span>D (十) only belongs to the example 什么. It never answers Q25–27.</span>`;
+    if (comp.id === "ten") return `${icon.bulb}<span>D (十) only belongs to the example 什么. It is never the answer to a real question.</span>`;
     const src = comp.from.ch === comp.glyph || comp.from.ch === comp.name ? `means “${comp.from.en}”` : `comes from <span class="han">${comp.from.ch}</span> “${comp.from.en}”`;
     return `${icon.bulb}<span>Not this one: <span class="han">${comp.name}</span> ${src}. Think about <span class="han">${q.word}</span> “${q.en}”. Which meaning does <b class="py">${q.py[q.t]}</b> need?</span>`;
   }
@@ -211,5 +231,5 @@
     });
   }
 
-  App.exam = { optionButton, wordTiles, questionRow, fillSlot, fly, bloom, fallAway, stamp, shake, fillExplain, hintFor, enableDrag, sleep };
+  App.exam = { optionButton, wordTiles, questionRow, setHint, fillSlot, fly, bloom, fallAway, stamp, shake, fillExplain, hintFor, enableDrag, sleep };
 })();

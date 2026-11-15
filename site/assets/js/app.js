@@ -264,7 +264,7 @@
   App.ring = (pct, label, cls) => {
     const C = 2 * Math.PI * 40;
     return `<div class="ring ${cls || ""}" data-pct="${pct}"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="40"/>
-      <circle class="bar" cx="50" cy="50" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}"/></svg><b>${label}</b></div>`;
+      <circle class="bar" cx="50" cy="50" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}"/></svg><b><span class="ring-v">${label}</span></b></div>`;
   };
   App.animateRings = (root) => {
     $$(".ring", root).forEach((r) => {
