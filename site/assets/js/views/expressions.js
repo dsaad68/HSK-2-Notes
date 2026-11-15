@@ -158,18 +158,59 @@
   };
 
   /* ======================================================================
-     Lesson
+     Lesson — one expression at a time, then the quiz
      ====================================================================== */
+  const join = (py) => py.join("");
+  const keepOf = (s) => s.keep.map((i) => Array.from(s.w)[i]).join("");
+  const dropOf = (s) => Array.from(s.w).filter((_, i) => !s.keep.includes(i)).join("");
+
+  /* One line saying which pattern the new word follows. */
+  function patternLine(e) {
+    const P = X().E.PATTERNS[e.pat], [A, B] = e.from;
+    const chars = Array.from(e.w), first = chars[0], last = chars[chars.length - 1];
+    const h = (c) => `<span class="han">${c}</span>`;
+    switch (e.pat) {
+      case "kind": return `It's a kind of <b>${B.g}</b>: the last character, ${h(last)}, says what it is.`;
+      case "place": return `It's a place: ${h(last)} means ${P.ends[last][1]}.`;
+      case "people": return `It's a person: ${h(last)} means ${P.ends[last][1]}.`;
+      case "action": return `First the action (<b>${A.g}</b>), then what it's about (<b>${B.g}</b>).`;
+      case "pair": return `A pair: <b>${A.g}</b> and <b>${B.g}</b> together in one word.`;
+      case "position": return `First the thing (<b>${A.g}</b>), then where (<b>${B.g}</b>).`;
+      case "helper": return `${h(first)} in front is a helper word: “${P.ends[first][1]}”.`;
+    }
+    return "";
+  }
+
+  /* The five narration steps that light up with the animation. */
+  function stepsHTML(e) {
+    const [A, B] = e.from;
+    const keepLine = (s) => {
+      const k = keepOf(s), d = dropOf(s);
+      if (!d) return `<span class="han xs-k">${k}</span> <i>${s.g}</i> stays as it is.`;
+      return `From <span class="han">${s.w}</span>, keep <span class="han xs-k">${k}</span> <i>${s.g}</i>. <span class="han xs-d">${d}</span> drops off.`;
+    };
+    const word = (s) => `<span class="han xs-w">${s.w}</span><span class="py">${join(s.py)}</span><span class="xs-en">${s.en}</span>`;
+    const items = [
+      ["You know", word(A)],
+      ["You also know", word(B)],
+      ["Keep one piece of each", `<span class="xs-line">${keepLine(A)}</span><span class="xs-line">${keepLine(B)}</span>`],
+      ["Join them", `<span class="xs-res"><span class="han xs-w">${e.w}</span><span class="py">${e.py}</span>=<b>${e.en}</b></span><span class="xs-line muted">${patternLine(e)}</span>${X().notes(e).map((t) => `<span class="x-note">${App.icon.bulb}<span>${t}</span></span>`).join("")}`],
+      ["Use it", X().sentence(e)]
+    ];
+    return items.map(([t, body], k) => `<li data-s="${k + 1}"><span class="xs-n">${k + 1}</span><div class="xs-text"><small>${t}</small><div>${body}</div></div></li>`).join("");
+  }
+
   App.views.exprLesson = {
     section: "expressions",
     nav: "expr",
     title: (n) => `Lesson ${n} · Expressions`,
     render(n) {
       const E = X().E, L = X().lesson(n);
-      this.builders = [];
+      this.L = null;
       if (!L) {
         return html(`<div class="wrap page-head"><span class="eyebrow">Expressions</span><h1 class="title-lg">There's no lesson ${n}</h1><p class="lede">${+n === 6 ? "Lesson 6 has no new-expressions page in the textbook." : "Pick a lesson from the list."}</p><div class="btn-row" style="margin-top:24px"><a class="btn btn-primary" href="#/expressions">All lessons ${App.icon.arrow}</a></div></div>`);
       }
+      this.L = L;
       const i = X().lessonIndex(n), prev = E.LESSONS[i - 1], next = E.LESSONS[i + 1];
       const root = html(`<div class="page-xlesson">
         <section class="wrap page-head xl-head">
@@ -177,62 +218,135 @@
             <div>
               <span class="eyebrow">Expressions · Lesson ${L.n}</span>
               <h1 class="title-lg xl-title">${L.items.map((e) => `<span class="han">${e.w}</span>`).join('<span class="xl-sep">·</span>')}<span class="zh-sub">${L.zh}</span></h1>
-              <p class="lede">Three new expressions, each built from two words you know. Watch the pieces join, then check yourself with three questions.</p>
+              <p class="lede">Three new expressions, one at a time. Each is built from two words you already know. Follow the steps, then check yourself.</p>
             </div>
             ${pills(L.n)}
           </div>
         </section>
-        <section class="wrap x-cards"></section>
-        <section class="wrap section x-quiz-sec">
-          <div class="section-head reveal"><div><span class="eyebrow">Check yourself</span><h2 class="title-lg" style="margin-top:12px">Three quick questions</h2></div>
-          <p class="muted" style="max-width:420px">Build one word, pick the meaning of one, and put one in a sentence. Keys: <kbd>1</kbd>–<kbd>4</kbd> answer, <kbd>Enter</kbd> next.</p></div>
-          <div class="x-quiz-host reveal"></div>
+        <section class="wrap xs">
+          <div class="xs-tabs" role="tablist" aria-label="Lesson steps">
+            ${L.items.map((e, k) => `<button class="xs-tab" role="tab" data-i="${k}"><span class="xs-tab-n">${k + 1}</span><span class="han">${e.w}</span></button><span class="xs-tab-line" aria-hidden="true"></span>`).join("")}
+            <button class="xs-tab" role="tab" data-i="${L.items.length}"><span class="xs-tab-n">${App.icon.check}</span>Quiz</button>
+          </div>
+          <div class="card xs-stage"></div>
         </section>
         <nav class="wrap x-pager">
           ${prev ? `<a class="x-pg" href="#/expressions/${prev.n}">${App.icon.prev}<span><small>Lesson ${prev.n}</small><b class="han">${prev.items.map((e) => e.w).join(" · ")}</b></span></a>` : `<a class="x-pg" href="#/expressions">${App.icon.prev}<span><small>Overview</small><b>All lessons</b></span></a>`}
           ${next ? `<a class="x-pg is-next" href="#/expressions/${next.n}"><span><small>Lesson ${next.n}</small><b class="han">${next.items.map((e) => e.w).join(" · ")}</b></span>${App.icon.next}</a>` : `<a class="x-pg is-next" href="#/expressions/review"><span><small>Finished?</small><b>Mixed review</b></span>${App.icon.next}</a>`}
         </nav>
       </div>`);
-
-      const cards = $(".x-cards", root);
-      this.builders = L.items.map((e, k) => {
-        const card = html(`<article class="card x-card reveal" style="--d:${k * 80}ms">
-          <header class="x-card-head"><span class="x-card-n">${k + 1}</span>${X().patTag(e.pat)}
-            <div class="x-card-actions">
-              <button class="btn btn-sm btn-ghost x-write" title="Write it stroke by stroke">${X().ICON.write}<span>Write</span></button>
-              <button class="btn btn-sm btn-ghost x-replay" title="Build it again" aria-label="Build it again">${App.icon.replay}</button>
-            </div>
-          </header>
-          <div class="x-card-build"></div>
-          ${X().notes(e).map((t) => `<p class="x-note">${App.icon.bulb}<span>${t}</span></p>`).join("")}
-          ${X().sentence(e)}
-        </article>`);
-        const b = X().builder(e, { cell: 44, rcell: 64 });
-        $(".x-card-build", card).appendChild(b.el);
-        $(".x-replay", card).addEventListener("click", () => { App.sfx.tick(); b.play(); });
-        $(".x-write", card).addEventListener("click", () => { App.sfx.tick(); b.write(); });
-        cards.appendChild(card);
-        b.card = card;
-        return b;
+      this.root = root;
+      this.next = next;
+      this.cur = -1;
+      this.seen = new Set();
+      $$(".xs-tab", root).forEach((t) => t.addEventListener("click", () => { App.sfx.tick(); this.show(+t.dataset.i); }));
+      App.onKey((ev) => {
+        if (this.cur >= L.items.length) return false; // the quiz has its own keys
+        if (ev.key === "ArrowRight") { this.show(this.cur + 1); return true; }
+        if (ev.key === "ArrowLeft" && this.cur > 0) { this.show(this.cur - 1); return true; }
+        return false;
       });
+      this.show(0);
+      return root;
+    },
 
-      const host = $(".x-quiz-host", root);
-      const nextHref = next ? `#/expressions/${next.n}` : "#/expressions/review";
-      X().quiz(host, X().questions(L), {
-        nextHref, nextLabel: next ? `Lesson ${next.n}` : "Mixed review",
+    mounted() {
+      if (this.L && this.slide && this.slide.b) this.slide.b.play(this.slide.playOpts);
+    },
+
+    /* Show step k: 0–2 are the expressions, 3 is the quiz. */
+    show(k) {
+      const L = this.L, root = this.root, n = L.items.length;
+      if (k < 0 || k > n || k === this.cur) return;
+      const dir = k > this.cur ? 1 : -1;
+      this.cur = k;
+      this.seen.add(k);
+      $$(".xs-tab", root).forEach((t) => {
+        const i = +t.dataset.i;
+        t.classList.toggle("is-on", i === k);
+        t.classList.toggle("is-seen", this.seen.has(i) && i !== k);
+        t.setAttribute("aria-selected", i === k);
+      });
+      const stage = $(".xs-stage", root);
+      const live = stage.isConnected && stage.ownerDocument === document;
+      const slide = k < n ? this.exprSlide(k) : this.quizSlide();
+      this.slide = slide;
+      const old = stage.firstElementChild;
+      const enter = () => {
+        stage.replaceChildren(slide.el);
+        if (!live) return;
+        slide.el.animate([{ opacity: 0, transform: `translateX(${dir * 26}px)` }, { opacity: 1, transform: "none" }], { duration: 420, easing: "cubic-bezier(.16,1,.3,1)" });
+        if (slide.b) App.later(() => slide.b.play(slide.playOpts), 250);
+        const top = $(".xs-tabs", root).getBoundingClientRect().top;
+        if (top < 70 || top > innerHeight * 0.6) $(".xs-tabs", root).scrollIntoView({ behavior: App.reduceMotion() ? "auto" : "smooth", block: "start" });
+      };
+      if (live && old && !App.reduceMotion()) {
+        old.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateX(${-dir * 22}px)` }], { duration: 170, fill: "forwards" }).finished.then(enter).catch(enter);
+      } else enter();
+    },
+
+    exprSlide(k) {
+      const L = this.L, e = L.items[k], n = L.items.length;
+      const nextLabel = k < n - 1 ? `Next: <span class="han">${L.items[k + 1].w}</span>` : "Check yourself";
+      const el = html(`<div class="xs-slide">
+        <header class="xs-head">
+          <div class="xs-title"><span class="xs-count">Expression ${k + 1} of ${n}</span>${X().patTag(e.pat)}</div>
+          <div class="x-card-actions">
+            <button class="btn btn-sm btn-ghost x-write" title="Write it stroke by stroke">${X().ICON.write}<span>Write</span></button>
+            <button class="btn btn-sm btn-ghost x-replay" title="Play the steps again">${App.icon.replay}<span>Replay</span></button>
+          </div>
+        </header>
+        <div class="xs-body">
+          <div class="xs-build"></div>
+          <ol class="xs-steps">${stepsHTML(e)}</ol>
+        </div>
+        <footer class="xs-foot">
+          ${k > 0 ? `<button class="btn btn-ghost xs-prev">${App.icon.prev} <span class="han">${L.items[k - 1].w}</span></button>` : `<span></span>`}
+          <span class="xs-keys muted"><kbd>←</kbd><kbd>→</kbd> move between words</span>
+          <button class="btn btn-primary xs-next">${nextLabel} ${App.icon.arrow}</button>
+        </footer>
+      </div>`);
+      const small = window.matchMedia("(max-width: 640px)").matches;
+      const b = X().builder(e, small ? { cell: 42, rcell: 62 } : { cell: 56, rcell: 84 });
+      b.prime();
+      $(".xs-build", el).appendChild(b.el);
+      const steps = $$(".xs-steps li", el);
+      const onStep = (s) => steps.forEach((li) => {
+        const v = +li.dataset.s;
+        li.classList.toggle("is-on", v === s);
+        li.classList.toggle("is-done", v < s);
+      });
+      onStep(0);
+      const playOpts = { staged: true, onStep };
+      $(".x-replay", el).addEventListener("click", () => { App.sfx.tick(); b.play(playOpts); });
+      $(".x-write", el).addEventListener("click", () => { App.sfx.tick(); onStep(6); b.write(); });
+      $(".xs-next", el).addEventListener("click", () => { App.sfx.tick(); this.show(k + 1); });
+      const pv = $(".xs-prev", el);
+      if (pv) pv.addEventListener("click", () => { App.sfx.tick(); this.show(k - 1); });
+      return { el, b, playOpts };
+    },
+
+    quizSlide() {
+      const L = this.L, root = this.root, next = this.next, n = L.items.length;
+      const el = html(`<div class="xs-slide xs-quiz">
+        <header class="xs-head">
+          <div class="xs-title"><span class="xs-count">Check yourself</span><h3 class="title-md">Three quick questions</h3></div>
+          <p class="muted xs-quiz-help">Build one word, pick the meaning of one, and put one in a sentence. Keys: <kbd>1</kbd>–<kbd>4</kbd> answer, <kbd>Enter</kbd> next.</p>
+        </header>
+        <div class="x-quiz-host"></div>
+        <footer class="xs-foot"><button class="btn btn-ghost xs-prev">${App.icon.prev} <span class="han">${L.items[n - 1].w}</span></button><span></span><span></span></footer>
+      </div>`);
+      $(".xs-prev", el).addEventListener("click", () => { App.sfx.tick(); this.show(n - 1); });
+      X().quiz($(".x-quiz-host", el), X().questions(L), {
+        nextHref: next ? `#/expressions/${next.n}` : "#/expressions/review",
+        nextLabel: next ? `Lesson ${next.n}` : "Mixed review",
         onDone: (score, total) => {
           App.store.recordExpr(L.n, score, total);
           const nav = $(".lesson-pills", root);
           if (nav) nav.outerHTML = pills(L.n);
         }
       });
-      this.root = root;
-      return root;
-    },
-    mounted() {
-      this.builders.forEach((b, k) => {
-        App.whenVisible(b.card, () => App.later(() => b.play(), 250 + k * 420));
-      });
+      return { el };
     }
   };
 

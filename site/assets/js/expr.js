@@ -87,12 +87,13 @@
     </div>`);
     const srcEl = $(".b-src", el), svg = $(".b-threads", el);
     const pieces = [];
+    let plusEl = null;
     const srcs = e.from.map((s, k) => {
       const t = tiles(s.w, s.py, { cell: o.cell });
       const w = html(`<div class="b-word"><div class="b-src-en">${s.en}</div></div>`);
       w.prepend(t.el);
       t.cells.forEach((c, i) => c.classList.add(s.keep.includes(i) ? "is-keep" : "is-drop"));
-      if (k === 1) srcEl.appendChild(html(`<span class="b-plus" aria-hidden="true">+</span>`));
+      if (k === 1) { plusEl = html(`<span class="b-plus" aria-hidden="true">+</span>`); srcEl.appendChild(plusEl); }
       srcEl.appendChild(w);
       return { s, t, w };
     });
@@ -146,7 +147,8 @@
     let run = 0;
     function reset() {
       run++;
-      el.classList.remove("is-pick", "is-threads", "is-built");
+      el.classList.remove("is-pick", "is-threads", "is-built", "is-staged");
+      [plusEl, ...srcs.map((S) => S.w)].forEach((n) => n && n.classList.remove("is-on"));
       svg.innerHTML = "";
       res.cells.forEach((c) => { c.ink.hideAll(); if (c.dataset.before) $(".cell-py", c).textContent = c.dataset.before; });
     }
@@ -172,14 +174,38 @@
       });
     }
 
-    async function play() {
+    /* Staged mode (lesson page): nothing shown yet, waiting for play({ staged: true }). */
+    function prime() { reset(); el.classList.add("is-staged"); }
+
+    /**
+     * play()                    one continuous animation (showcases)
+     * play({ staged, onStep })  word A (1) → word B (2) → keep the pieces (3) → join (4) → use it (5),
+     *                           pausing between steps so the narration can be read
+     */
+    async function play(po) {
+      po = po || {};
       reset();
       const my = run;
       const ok = () => alive() && my === run && el.isConnected;
-      if (App.reduceMotion()) { finish(); return true; }
-      await sleep(260); if (!ok()) return false;
+      const step = (n) => { if (po.onStep) po.onStep(n); };
+      const pace = po.pace || 1900;
+      if (App.reduceMotion()) { finish(); if (po.staged) step(5); return true; }
+      if (po.staged) {
+        el.classList.add("is-staged");
+        await sleep(350); if (!ok()) return false;
+        srcs[0].w.classList.add("is-on"); step(1);
+        await sleep(pace); if (!ok()) return false;
+        if (plusEl) plusEl.classList.add("is-on");
+        srcs[1].w.classList.add("is-on"); step(2);
+        await sleep(pace); if (!ok()) return false;
+        step(3);
+        await sleep(250); if (!ok()) return false;
+      } else {
+        await sleep(260); if (!ok()) return false;
+      }
       el.classList.add("is-pick");
-      await sleep(820); if (!ok()) return false;
+      await sleep(po.staged ? pace + 300 : 820); if (!ok()) return false;
+      if (po.staged) step(4);
       el.classList.add("is-threads");
       drawThreads(true);
       await sleep(560); if (!ok()) return false;
@@ -193,7 +219,8 @@
       App.sfx.tick();
       el.classList.add("is-built");
       if (o.tone) tones(true);
-      await sleep(700);
+      await sleep(po.staged ? 1500 : 700);
+      if (po.staged && ok()) step(5);
       return ok();
     }
 
@@ -212,7 +239,7 @@
       }
     }
 
-    return { el, e, play, reset, finish, write, res, srcs };
+    return { el, e, play, prime, reset, finish, write, res, srcs };
   }
 
   /* Example sentence with the expression highlighted (Chinese + pinyin). */
