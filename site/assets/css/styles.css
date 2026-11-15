@@ -222,7 +222,7 @@ main.view { min-height: calc(100vh - var(--topbar-h)); }
 .title-md { font: 600 clamp(22px, 2.4vw, 28px)/1.15 var(--font-display); letter-spacing: -0.015em; }
 .title-xl em, .title-lg em { font-style: italic; color: var(--accent); font-weight: 500; }
 .lede { font-size: 18px; line-height: 1.65; color: var(--ink-2); max-width: 62ch; }
-.page-head { padding: 48px 0 8px; }
+.page-head { padding-block: 48px 8px; }
 .page-head .title-lg { margin-top: 12px; }
 .page-head .lede { margin-top: 14px; }
 .zh-sub { font: 400 0.6em/1 var(--font-han); color: var(--ink-3); margin-left: 12px; letter-spacing: 0.06em; }

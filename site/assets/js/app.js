@@ -57,7 +57,7 @@
 
   /* ---------------- store ---------------- */
   const KEY = "hsk2-radicals-v1";
-  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, settings: { theme: "light", sound: false, speed: 1, atlas: "lessons", examMode: "learn", showMeaning: false } });
+  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, expr: {}, settings: { theme: "light", sound: false, speed: 1, atlas: "lessons", examMode: "learn", showMeaning: false } });
   let state = blank();
   try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(blank(), JSON.parse(raw)); state.settings = Object.assign(blank().settings, state.settings); } catch (e) { /* storage unavailable */ }
   // Keep several open tabs in sync (otherwise one tab would overwrite another's progress).
@@ -76,6 +76,10 @@
     recordSet(n, score, mode) {
       const s = (state.sets[n] = state.sets[n] || { best: 0, tries: 0 });
       s.tries++; s.last = score; s.best = Math.max(s.best, score); s.mode = mode; s.at = Date.now(); this.save();
+    },
+    recordExpr(n, score, total) {
+      const s = (state.expr[n] = state.expr[n] || { best: 0, tries: 0 });
+      s.tries++; s.last = score; s.total = total; s.best = Math.max(s.best, score); s.at = Date.now(); this.save();
     },
     reset() { state = blank(); this.save(); }
   };
@@ -275,7 +279,11 @@
 
   /* ---------------- router ---------------- */
   const ROUTES = [
-    [/^\/?$/, "home"],
+    [/^\/?$/, "hub"],
+    [/^\/radicals\/?$/, "home"],
+    [/^\/expressions\/?$/, "expr"],
+    [/^\/expressions\/review\/?$/, "exprReview"],
+    [/^\/expressions\/(\d+)\/?$/, "exprLesson"],
     [/^\/course\/?$/, "course"],
     [/^\/learn\/?$/, "learn"],
     [/^\/learn\/([\w-]+)\/?$/, "radical"],
@@ -287,7 +295,7 @@
   let first = true, currentKey = "";
   function route() {
     const path = decodeURIComponent(location.hash.replace(/^#/, "")) || "/";
-    let name = "home", params = [];
+    let name = "hub", params = [];
     for (const [re, n] of ROUTES) { const m = path.match(re); if (m) { name = n; params = m.slice(1); break; } }
     const view = App.views[name];
     if (!view) return;
@@ -302,8 +310,11 @@
       catch (err) { console.error(err); node = html(`<div class="wrap page-head"><h1 class="title-lg">Something went wrong</h1><p class="lede">${err.message}</p></div>`); }
       main.replaceChildren(node);
       window.scrollTo(0, 0);
+      syncSection(view.section || "radicals");
       $$(".nav a").forEach((a) => a.classList.toggle("is-active", a.dataset.nav === view.nav));
-      document.title = (view.title ? (typeof view.title === "function" ? view.title.apply(view, params) : view.title) + " · " : "") + "偏旁 Radicals — HSK 2 Writing";
+      const sec = SECTIONS.find((s) => s.id === (view.section || "radicals"));
+      const base = sec ? `${sec.zh} ${sec.en} — HSK 2` : "HSK 2 Notes";
+      document.title = (view.title ? (typeof view.title === "function" ? view.title.apply(view, params) : view.title) + " · " : "") + base;
       App.reveal(main);
       App.animateRings(main);
       view.mounted && view.mounted.apply(view, params);
@@ -312,6 +323,23 @@
     else swap();
     first = false;
   }
+  /* ---------------- section chrome: breadcrumb + the section's own nav ---------------- */
+  const SECTIONS = window.HSK_SECTIONS || [];
+  let curSection = null;
+  function syncSection(id) {
+    if (id === curSection) return;
+    curSection = id;
+    const sec = SECTIONS.find((s) => s.id === id);
+    const crumb = $("#crumb"), nav = $(".nav");
+    if (crumb) {
+      crumb.hidden = !sec;
+      if (sec) { crumb.href = sec.href; crumb.innerHTML = `<span class="han">${sec.zh}</span><span class="crumb-en">${sec.en.replace(/^Writing · /, "")}</span>`; }
+    }
+    if (nav) nav.innerHTML = sec && sec.nav ? sec.nav.map(([href, key, zh, label]) => `<a href="${href}" data-nav="${key}"><span class="nav-zh" aria-hidden="true">${zh}</span>${label}</a>`).join("") : "";
+    document.body.classList.toggle("has-nav", !!(sec && sec.nav));
+    document.body.dataset.section = id;
+  }
+
   App.go = (hash) => { if (location.hash === hash) route(); else location.hash = hash; };
   App.refresh = () => { currentKey = ""; route(); };
 

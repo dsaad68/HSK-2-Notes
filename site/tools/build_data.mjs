@@ -25,8 +25,12 @@ const ctx = { window: {} };
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/content.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/course.js"), "utf8"), ctx);
+vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/expressions.js"), "utf8"), ctx);
+vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/sections.js"), "utf8"), ctx);
 const H = ctx.window.HSK;
 const C = ctx.window.HSK_COURSE;
+const E = ctx.window.HSK_EXPR;
+const SECTIONS = ctx.window.HSK_SECTIONS;
 
 // ---- collect every character we draw with strokes ---------------------------
 const need = new Set();
@@ -48,6 +52,9 @@ C.FAMILIES.forEach((fam) => { add(fam.sound); fam.members.forEach((m) => add(m.c
 C.SHAPES.forEach((s) => add(s.full));
 C.TRAPS.forEach((t) => add(t.ch));
 ["妈", "马"].forEach(add);
+// expressions: every new word is written stroke by stroke; landing page section glyphs
+E.LESSONS.forEach((L) => L.items.forEach((e) => { add(e.w); e.from.forEach((s) => add(s.w)); }));
+SECTIONS.forEach((s) => add(s.glyph));
 
 // ---- stream the big source files -------------------------------------------
 async function scan(file, fn) {
