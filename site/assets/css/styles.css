@@ -801,7 +801,10 @@ main.view { min-height: calc(100vh - var(--topbar-h)); }
 .hint-btn:hover, .qrow.is-active .hint-btn { opacity: 1; }
 .hint-btn:active { transform: scale(0.95); }
 .hint-btn[aria-pressed="true"] { opacity: 1; color: #fff; background: var(--gold); box-shadow: none; }
+/* meaning first (takes the free space), Hint button after it at a fixed spot before the answer box */
 .qrow .q-meta { display: flex; align-items: center; gap: 14px; }
+.qrow .q-meta .en { flex: 1 1 auto; min-width: 0; }
+.qrow .q-meta .hint-btn { flex-shrink: 0; }
 .qrow.is-solved .hint-btn { display: none; }
 .gap-q {
   position: absolute; z-index: 3; transform: translate(-50%, -50%);
@@ -846,6 +849,17 @@ main.view { min-height: calc(100vh - var(--topbar-h)); }
 .explain-text .snd { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13.5px; color: var(--gold); font-weight: 500; }
 .explain-text .snd svg { width: 15px; height: 15px; }
 .explain-text .han { color: var(--ink); }
+.explain-rad {
+  display: flex; flex-direction: column; gap: 3px; margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: 13.5px; line-height: 1.45;
+  transition: box-shadow 0.2s, transform 0.2s var(--ease-out);
+}
+.explain-rad:hover { box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--accent); transform: translateY(-1px); }
+.explain-rad .er-name { color: var(--ink-3); }
+.explain-rad .er-name .han { font-size: 16px; font-weight: 400; color: var(--ink); }
+.explain-rad .er-name .py { color: var(--accent); font-weight: 600; }
+.explain-rad .er-mean { color: var(--ink-2); }
+.explain-rad .er-go { color: var(--accent); font-weight: 600; font-size: 12.5px; }
 .hint-line { grid-column: 2 / -1; font-size: 14px; color: var(--accent-ink); display: flex; gap: 8px; align-items: center; }
 .hint-line:empty { display: none; }
 .hint-line svg { width: 16px; height: 16px; flex-shrink: 0; }

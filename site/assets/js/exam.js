@@ -59,7 +59,7 @@
     const row = html(`<div class="qrow${ex ? " is-example" : ""}" data-no="${q.no}" ${ex ? "" : 'tabindex="0" role="button"'} aria-label="${ex ? "Example" : "Question " + q.no}">
         <div class="qno">${ex ? "例如" : q.no + "."}</div>
         <div class="q-word"></div>
-        <div class="q-meta">${!ex && opts.hint !== false ? `<button class="hint-btn" type="button" aria-pressed="false" title="Show where the missing piece goes (H)">${icon.bulb}<span>Hint</span></button>` : ""}<div class="en">${q.en}</div></div>
+        <div class="q-meta"><div class="en">${q.en}</div>${!ex && opts.hint !== false ? `<button class="hint-btn" type="button" aria-pressed="false" title="Show where the missing piece goes (H)">${icon.bulb}<span>Hint</span></button>` : ""}</div>
         <div class="ans-box" aria-live="polite"></div>
         <div class="hint-line"></div>
         <div class="explain"><div><div class="explain-inner"></div></div></div>
@@ -172,7 +172,10 @@
         ${App.speakBtn(q.word)}
         <div>${q.why}</div>
         ${q.sound ? `<div class="snd">${icon.speaker}<span>Sound hint: ${q.sound}</span></div>` : ""}
-        ${comp && !comp.isExtra ? `<div style="margin-top:6px"><a href="#/learn/${comp.id}" style="font-size:13.5px;color:var(--accent);font-weight:600">Study ${comp.name} →</a></div>` : ""}
+        ${comp ? `<a class="explain-rad" href="#/learn/${comp.id}">
+          <span class="er-name"><b class="han">${comp.name}</b> <span class="py">${comp.py}</span> · ${comp.en}</span>
+          <span class="er-mean">${comp.meaning}</span>
+          <span class="er-go">Study this radical →</span></a>` : ""}
       </div>`;
     const gs = ctx.explain.querySelectorAll(".eq-g");
     App.ink(gs[0], ch, { strokes: q.miss, fit: "center", highlight: q.miss });
