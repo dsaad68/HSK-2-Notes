@@ -63,7 +63,7 @@
 
   /* ---------------- store ---------------- */
   const KEY = "hsk2-radicals-v1";
-  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, settings: { theme: null, sound: true, speed: 1, atlas: "lessons", examMode: "learn" } });
+  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, settings: { theme: null, sound: true, speed: 1, atlas: "lessons", examMode: "learn" } });
   let state = blank();
   try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(blank(), JSON.parse(raw)); state.settings = Object.assign(blank().settings, state.settings); } catch (e) { /* storage unavailable */ }
   // Keep several open tabs in sync (otherwise one tab would overwrite another's progress).
@@ -290,12 +290,14 @@
     const perfect = Object.values(state.sets).filter((s) => s.best === 3).length;
     let seen = 0, correct = 0;
     Object.values(state.comp).forEach((c) => { seen += c.s; correct += c.c; });
-    return { studied, setsDone, perfect, seen, correct, acc: seen ? correct / seen : 0 };
+    const lessons = Object.keys(state.course || {}).length;
+    return { studied, setsDone, perfect, seen, correct, acc: seen ? correct / seen : 0, lessons };
   };
 
   /* ---------------- router ---------------- */
   const ROUTES = [
     [/^\/?$/, "home"],
+    [/^\/course\/?$/, "course"],
     [/^\/learn\/?$/, "learn"],
     [/^\/learn\/([\w-]+)\/?$/, "radical"],
     [/^\/compare\/?$/, "compare"],

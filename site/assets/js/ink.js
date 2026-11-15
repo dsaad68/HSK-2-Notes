@@ -177,6 +177,7 @@
 
       this.parts = {};
       const hl = new Set(this.o.highlight);
+      const hl2 = new Set(this.o.highlight2 || []);
       for (const i of this.idx) {
         const outline = this.d.s[i];
         el("path", { d: outline, class: "ink-ghost" + (hl.has(i) ? " is-hl" : "") }, this.ghostG);
@@ -186,7 +187,7 @@
         const L = polyLen(pts) + BRUSH / 2;
         const brush = el("path", {
           d: polyPath(pts),
-          class: "ink-brush" + (hl.has(i) ? " is-hl" : ""),
+          class: "ink-brush" + (hl.has(i) ? " is-hl" : hl2.has(i) ? " is-hl2" : ""),
           "clip-path": `url(#${this.id}-c${i})`,
           "stroke-dasharray": `${L.toFixed(1)} ${L.toFixed(1)}`,
           "stroke-dashoffset": L.toFixed(1)
@@ -349,5 +350,14 @@
     return new InkChar(host, comp.src[0], Object.assign({ strokes: comp.src[1], fit: "center", shown: true }, opts));
   }
 
-  window.Ink = { InkChar, glyph, component, data, bbox, fitFor, transformData, range, sleep, reduceMotion };
+  /** Top-level components of a character as stroke-index groups, e.g. 明 → [[0..3],[4..7]]. */
+  function groups(ch) {
+    const d = data(ch);
+    if (!d || !d.g) return null;
+    const out = {};
+    Array.from(d.g).forEach((c, i) => { const k = c === "-" ? "z" : c; (out[k] = out[k] || []).push(i); });
+    return Object.keys(out).sort().map((k) => out[k]);
+  }
+
+  window.Ink = { InkChar, glyph, component, data, bbox, fitFor, transformData, range, sleep, reduceMotion, groups };
 })();

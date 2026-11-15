@@ -75,6 +75,23 @@
           </div>
         </section>
 
+        ${window.HSK_ORIGINS && HSK_ORIGINS[r.id] ? `<section class="section" id="sec-origin" style="padding-top:16px">
+          <div class="section-head"><div><span class="eyebrow">源 · Origin</span><h2 class="title-md" style="margin-top:10px">From a picture to ${r.name}</h2></div>
+            <button class="btn btn-sm btn-ghost" data-evo-replay>${I.replay} Replay</button></div>
+          <div class="card evo" aria-label="How ${r.name} evolved"></div>
+          <div class="origin-grid">
+            <div class="card origin-story"><h3>Where it comes from</h3><p>${HSK_ORIGINS[r.id].story}</p>
+              <h4>What it means in characters</h4><div class="means">${HSK_ORIGINS[r.id].means.map((m) => `<span class="chip">${m}</span>`).join("")}</div></div>
+            <div class="card origin-hook"><span class="hook-ico">${I.bulb}</span><h3>Memory hook</h3><p>${HSK_ORIGINS[r.id].hook}</p></div>
+          </div>
+          <div class="card links">
+            <h3>Does the meaning fit your characters?</h3>
+            <p>Not every character keeps its radical's meaning. Here's how each example really relates to ${r.name}.</p>
+            <div class="link-rows"></div>
+            <div class="rel-legend">${Object.entries(HSK_REL).map(([k, v]) => `<span class="rel-${k}" title="${v.desc}"><i></i>${v.label}</span>`).join("")}</div>
+          </div>
+        </section>` : ""}
+
         <section class="section" style="padding-top:16px">
           <div class="section-head"><div><span class="eyebrow">例字 · Examples</span><h2 class="title-md" style="margin-top:10px">See it inside real characters</h2></div>
           <p class="muted">Click a character to replay it. The radical is drawn in red.</p></div>
@@ -123,6 +140,7 @@
       this.root = root;
       this.buildPlayer(root, r);
       this.buildFacts(root, r);
+      this.buildOrigin(root, r);
       this.buildExamples(root, r);
       this.buildWriter(root, r);
 
@@ -245,6 +263,88 @@
       if (Ink.data(r.from.ch)) App.ink(full, r.from.ch, { fit: "center", fill: 0.82 });
       else full.innerHTML = `<span class="han" style="font-size:30px">${r.from.ch}</span>`;
       App.compInk($(".from-rad", root), r, { fill: 0.82, highlight: r.src[1] });
+    },
+
+    /* ---------------- origin: picture → ancient → full → radical → word ---------------- */
+    buildOrigin(root, r) {
+      const o = window.HSK_ORIGINS && HSK_ORIGINS[r.id];
+      const evo = $(".evo", root);
+      if (!o || !evo) return;
+      const e0 = r.examples[0];
+      const steps = [];
+      const arrows = [];
+      const addStep = (title, sub, cls) => {
+        if (steps.length) {
+          const a = html(`<div class="evo-arrow" aria-hidden="true"><svg viewBox="0 0 26 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7H22"/><path d="M17 2L23 7L17 12" stroke-dasharray="none"/></svg></div>`);
+          evo.appendChild(a); arrows.push(a);
+        }
+        const s = html(`<figure class="evo-step"><div class="evo-card ${cls || ""}"></div><figcaption><b>${title}</b><span>${sub}</span></figcaption></figure>`);
+        evo.appendChild(s);
+        const st = { el: s, card: $(".evo-card", s) };
+        steps.push(st);
+        return st;
+      };
+
+      const sPic = addStep("The picture", r.from.en);
+      sPic.art = App.art.make(r.id, "art", { label: r.from.en });
+      sPic.card.appendChild(sPic.art);
+
+      const sEarly = addStep("Ancient form", o.rotate ? "stylised · later turned upright" : "stylised", "is-early");
+      sEarly.art = App.art.make(r.id, "early", { label: "ancient form" });
+      sEarly.card.appendChild(sEarly.art);
+
+      let sFull = null;
+      if (r.from.ch !== r.glyph && Ink.data(r.from.ch)) {
+        sFull = addStep("Full character", `<span class="han">${r.from.ch}</span> ${r.from.py}`);
+        sFull.ink = App.ink(sFull.card, r.from.ch, { fit: "center", fill: 0.8, grid: "tian", shown: false });
+      }
+      const sRad = addStep("As a radical", `<span class="han">${r.name}</span>`);
+      sRad.ink = App.compInk(sRad.card, r, { grid: "tian", highlight: r.src[1], shown: false, fill: 0.72 });
+      const sWord = addStep("In a word", `<span class="han">${e0.word}</span> ${e0.wpy.join(" ")}`);
+      sWord.ink = App.ink(sWord.card, e0.ch, { grid: "tian", highlight: e0.idx, shown: false });
+
+      const alive = App.alive();
+      let run = 0;
+      const play = async () => {
+        const my = ++run;
+        const ok = () => alive() && my === run;
+        steps.forEach((s) => { s.el.classList.remove("is-on", "is-active"); if (s.ink) s.ink.hideAll(); if (s.art) App.art.reset(s.art); });
+        arrows.forEach((a) => a.classList.remove("is-on"));
+        for (let k = 0; k < steps.length; k++) {
+          if (!ok()) return;
+          const s = steps[k];
+          if (k) arrows[k - 1].classList.add("is-on");
+          s.el.classList.add("is-on", "is-active");
+          if (k && s.el.scrollIntoView && evo.scrollWidth > evo.clientWidth + 4) evo.scrollTo({ left: s.el.offsetLeft - evo.clientWidth / 2 + s.el.offsetWidth / 2, behavior: "smooth" });
+          if (s.art) await App.art.draw(s.art, 1.1);
+          else if (s.ink) await s.ink.animate({ speed: 2.2, gap: 70 });
+          if (!ok()) return;
+          await App.sleep(350);
+          s.el.classList.remove("is-active");
+          if (k) arrows[k - 1].classList.remove("is-on");
+        }
+      };
+      App.whenVisible(evo, play);
+      $("[data-evo-replay]", root).addEventListener("click", play);
+      App.onCleanup(() => { run++; });
+
+      // Does the meaning fit? one row per example
+      const rowsEl = $(".link-rows", root);
+      const ARC = { strong: "meaning", partial: "loosely", sound: "sound", form: "shape only" };
+      r.examples.forEach((e) => {
+        const L = o.links[e.ch];
+        if (!L) return;
+        const row = html(`<div class="link-row rel-${L.rel}">
+          <div class="link-art"></div>
+          <div class="link-arrow"><span>${ARC[L.rel]}</span><svg viewBox="0 0 100 26" preserveAspectRatio="none"><path class="arc" d="M4 18C30 4 70 4 94 16"/><path d="M86 9L95 16L86 22"/></svg></div>
+          <div class="link-char"></div>
+          <div class="link-text"><span class="rel-badge">${HSK_REL[L.rel].label}</span><div><b class="han">${e.ch}</b><span class="py">${e.py}</span> · ${e.en} ${App.speakBtn(e.ch)}</div><p>${L.note}</p></div>
+        </div>`);
+        const a = App.art.make(r.id, "art", { drawn: true, label: r.from.en });
+        $(".link-art", row).appendChild(a);
+        App.ink($(".link-char", row), e.ch, { highlight: e.idx, grid: "tian" });
+        rowsEl.appendChild(row);
+      });
     },
 
     /* ---------------- examples ---------------- */

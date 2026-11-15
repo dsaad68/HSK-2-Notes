@@ -22,8 +22,8 @@
               <h1 class="title-xl">Every character is built from <em>pieces</em>. Learn the pieces.</h1>
               <p class="lede">In Questions 25–27 you see a character with one piece missing, and you pick the radical (偏旁) that completes it. This course covers the 30 radicals from your textbook, animated stroke by stroke, and then drills all 15 exam sets.</p>
               <div class="btn-row">
-                <a class="btn btn-primary" href="#/learn">Start with the radicals ${App.icon.arrow}</a>
-                <a class="btn" href="#/practice/1">Try exam set 1</a>
+                <a class="btn btn-primary" href="#/course">Start the course ${App.icon.arrow}</a>
+                <a class="btn" href="#/learn">Browse the 30 radicals</a>
               </div>
               <div class="hero-stats">
                 <div><b>30</b><span>radicals · 偏旁</span></div>
@@ -74,7 +74,8 @@
         <section class="section wrap">
           <div class="section-head reveal"><div><span class="eyebrow">Your progress</span><h2 class="title-lg" style="margin-top:12px">Keep the streak going</h2></div></div>
           <div class="progress-grid">
-            <a class="card prog-card reveal" href="#/learn">${App.ring(st.studied / 30, st.studied + "<small style='font-size:12px;color:var(--ink-4)'>/30</small>")}<div><h4>Radicals studied</h4><p>Open a radical to watch its strokes and practise writing it.</p></div></a>
+            <a class="card prog-card reveal" href="#/course">${App.ring(st.lessons / 8, st.lessons + "<small style='font-size:12px;color:var(--ink-4)'>/8</small>")}<div><h4>Course checks</h4><p>Nine short lessons on how radicals work.</p></div></a>
+            <a class="card prog-card reveal" style="--d:60ms" href="#/learn">${App.ring(st.studied / 30, st.studied + "<small style='font-size:12px;color:var(--ink-4)'>/30</small>")}<div><h4>Radicals studied</h4><p>Open a radical to watch its strokes and practise writing it.</p></div></a>
             <a class="card prog-card reveal" style="--d:80ms" href="#/practice">${App.ring(st.setsDone / 15, st.setsDone + "<small style='font-size:12px;color:var(--ink-4)'>/15</small>", "jade")}<div><h4>Exam sets done</h4><p>${st.perfect} perfect so far. Aim for 3/3 on every set.</p></div></a>
             <a class="card prog-card reveal" style="--d:160ms" href="#/challenge">${App.ring(st.acc, st.seen ? Math.round(st.acc * 100) + "%" : "–", "gold")}<div><h4>Challenge accuracy</h4><p>${st.seen ? st.correct + " of " + st.seen + " answered correctly." : "Mixed drills across all 30 radicals."}</p></div></a>
           </div>
