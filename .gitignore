@@ -1,4 +1,6 @@
-# Source exam materials (scanned textbook & exam pages) stay local only
-exam-materials/
+# Source exam materials (scanned textbook & exam pages) stay local only,
+# except the HSK 2 vocabulary list
+exam-materials/*
+!exam-materials/vocab/
 
 .DS_Store
