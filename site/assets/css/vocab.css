@@ -75,7 +75,8 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vg-link:hover, .vg-link:focus-visible { background: var(--indigo-soft); text-decoration-color: currentColor; }
 .vg-link.is-demo { text-decoration-color: currentColor; }
 .vg-en { font-size: var(--en); color: var(--ink-2); line-height: 1.3; overflow-wrap: anywhere; }
-.vg-lg .vg-leaf, .vg-md .vg-leaf { text-align: center; justify-items: center; }
+/* In columns every line of a word starts at the edge facing the hub (pinyin, characters and
+   meaning), so an arrow ending at that edge can never cross another word. */
 .vg-lg .vg-en { font-family: var(--font-display); font-style: italic; color: var(--ink-2); max-width: 16ch; }
 .vg-new {
   display: inline-grid; place-items: center; vertical-align: super; margin-left: 2px;

@@ -223,6 +223,17 @@
     return { left, right };
   }
   const overlaps = (r, s, gap) => r.x < s.x + s.w + gap && s.x < r.x + r.w + gap && r.y < s.y + s.h + gap && s.y < r.y + r.h + gap;
+  /** Does the segment (x1,y1)–(x2,y2) pass through box b (shrunk by `inset`)? Liang–Barsky clipping. */
+  function segHits(x1, y1, x2, y2, b, inset) {
+    const bx = b.x + inset, by = b.y + inset, bw = b.w - 2 * inset, bh = b.h - 2 * inset, dx = x2 - x1, dy = y2 - y1;
+    let t0 = 0, t1 = 1;
+    for (const [p, q] of [[-dx, x1 - bx], [dx, bx + bw - x1], [-dy, y1 - by], [dy, by + bh - y1]]) {
+      if (p === 0) { if (q < 0) return false; continue; }
+      const r = q / p;
+      if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+    }
+    return t1 > t0;
+  }
 
   function ringMeasure(el) {
     const hubEl = $(".vg-hub", el), L = $$(".is-left .vg-leaf", el), R = $$(".is-right .vg-leaf", el);
@@ -249,6 +260,11 @@
         }
         // keep inside the stage
         if (boxes[i].x < 0 || boxes[i].x + boxes[i].w > W) i < nl ? badL++ : badR++;
+        // an arrow must not pass over another word
+        const tx = boxes[i].x + boxes[i].w / 2, ty = boxes[i].y + boxes[i].h / 2;
+        for (let j = 0; j < boxes.length; j++) {
+          if (j !== i && segHits(cx, cy, tx, ty, boxes[j], 2)) i < nl ? badL++ : badR++;
+        }
       }
       return { cx, cy, b, boxes, badL, badR, badX, bad: badL + badR + badX, H: 2 * b + itemH + 12 };
     };
