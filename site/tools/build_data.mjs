@@ -27,10 +27,12 @@ vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/content.js"), "u
 vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/course.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/expressions.js"), "utf8"), ctx);
 vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/sections.js"), "utf8"), ctx);
+vm.runInContext(fs.readFileSync(path.join(site, "assets/js/data/vocab.js"), "utf8"), ctx);
 const H = ctx.window.HSK;
 const C = ctx.window.HSK_COURSE;
 const E = ctx.window.HSK_EXPR;
 const SECTIONS = ctx.window.HSK_SECTIONS;
+const VOCAB = ctx.window.HSK_VOCAB;
 
 // ---- collect every character we draw with strokes ---------------------------
 const need = new Set();
@@ -55,6 +57,8 @@ C.TRAPS.forEach((t) => add(t.ch));
 // expressions: every new word is written stroke by stroke; landing page section glyphs
 E.LESSONS.forEach((L) => L.items.forEach((e) => { add(e.w); e.from.forEach((s) => add(s.w)); }));
 SECTIONS.forEach((s) => add(s.glyph));
+// vocabulary graphs: every hub character is drawn with the brush
+VOCAB.hubs.forEach((h) => add(h.h));
 
 // ---- stream the big source files -------------------------------------------
 async function scan(file, fn) {

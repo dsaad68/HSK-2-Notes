@@ -347,7 +347,7 @@
       fb.classList.remove("is-on"); fb.innerHTML = ""; next.hidden = true;
       setStep();
       const q = qs[idx];
-      const node = (q.type === "build" ? qBuild : q.type === "meaning" ? qMeaning : qCloze)(q, settle, alive);
+      const node = (q.render || (q.type === "build" ? qBuild : q.type === "meaning" ? qMeaning : qCloze))(q, settle, alive);
       cur = node;
       stage.replaceChildren(node.el);
       // Only animate once the card is in the live page: an element still inside a <template>

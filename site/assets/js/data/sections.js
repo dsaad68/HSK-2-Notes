@@ -5,8 +5,10 @@
 (function () {
   "use strict";
   window.HSK_SECTIONS = [
-    { id: "vocab", n: 1, zh: "词汇", py: "cíhuì", glyph: "词", en: "Vocabulary", status: "soon",
-      desc: "The words of HSK 2, with sound, meaning and stroke order." },
+    { id: "vocab", n: 1, zh: "词汇", py: "cíhuì", glyph: "词", en: "Vocabulary", status: "live",
+      href: "#/vocab", cta: "Explore the graphs",
+      desc: "The HSK 2 word list as character graphs: one shared character in red, every word it builds around it, like <span class=\"han\">车 → 火车 · 开车 · 车站</span>. Open a family, follow the links to the next one, then quiz yourself.",
+      nav: [["#/vocab", "vocab", "图", "Graphs"], ["#/vocab/quiz", "vocab-quiz", "练", "Quiz"]] },
     { id: "grammar", n: 2, zh: "语法", py: "yǔfǎ", glyph: "法", en: "Grammar", status: "soon",
       desc: "The sentence patterns of HSK 2, one structure at a time." },
     { id: "expressions", n: 3, zh: "词组", py: "cízǔ", glyph: "组", en: "Expressions", status: "live",

@@ -13,8 +13,12 @@
     title: "",
     render() {
       const S = window.HSK_SECTIONS;
-      const rs = App.stats(), xs = App.expr.stats();
+      const rs = App.stats(), xs = App.expr.stats(), vs = App.vocab.stats();
       const meta = {
+        vocab: `<div class="toc-meta">
+            <span class="chip chip-accent">${vs.hubs} graphs</span><span class="chip">${App.vocab.WORDS.size} words</span>
+            <span class="toc-prog"><i style="--w:${((vs.seen / vs.hubs) * 100).toFixed(1)}%"></i></span><span class="toc-prog-l">${vs.seen}/${vs.hubs} graphs opened${vs.quiz ? ` · quiz best ${vs.quiz.best}/${vs.quiz.total || 10}` : ""}</span>
+          </div>`,
         expressions: `<div class="toc-meta">
             <span class="chip chip-accent">${xs.lessons} lessons</span><span class="chip">${App.expr.ALL.length} expressions</span>
             <span class="toc-prog"><i style="--w:${((xs.tried / xs.lessons) * 100).toFixed(1)}%"></i></span><span class="toc-prog-l">${xs.tried}/${xs.lessons} lessons tried${xs.perfect ? ` · ${xs.perfect} perfect` : ""}</span>
@@ -38,7 +42,7 @@
               <div class="hero-stats">
                 <div><b>${S.length}</b><span>parts · 部分</span></div>
                 <div><b>${live.length}</b><span>ready now</span></div>
-                <div><b>${App.expr.ALL.length + 30}</b><span>words &amp; radicals</span></div>
+                <div><b>${App.vocab.WORDS.size}</b><span>HSK 2 words</span></div>
               </div>
             </div>
             <div class="hub-stage card" aria-label="The five parts, written stroke by stroke">
@@ -99,6 +103,11 @@
         const pick = ["茶杯", "雨衣", "火车站", "钱包", "运动服"].map((w) => App.expr.ALL.find((e) => e.w === w));
         App.expr.showcase(xv, pick, { builder: { cell: 40, rcell: 54 }, hold: 2200 });
       }
+      const vv = $('.toc-row[data-id="vocab"] .toc-vis', root);
+      if (vv) {
+        const pick = ["机", "开", "午", "门", "色"].map((c) => App.vocab.HUB.get(c)).filter(Boolean);
+        App.vocab.showcase(vv, pick, { size: "sm", ink: false, dots: false, hold: 2600 });
+      }
       const rv = $('.toc-row[data-id="radicals"] .toc-vis', root);
       if (rv) this.radicals(rv);
     },
@@ -109,7 +118,7 @@
       const S = window.HSK_SECTIONS;
       const cell = $(".hub-cell", el), tabs = $$(".hub-tabs button", el);
       const cap = $(".hub-cap", el);
-      let i = 2, run = 0; // start on Expressions
+      let i = Math.max(0, S.findIndex((s) => s.status === "live")), run = 0; // start on the first part that's ready
       tabs.forEach((t, k) => t.addEventListener("click", () => { i = k; loop(); }));
       const loop = async () => {
         const my = ++run;
