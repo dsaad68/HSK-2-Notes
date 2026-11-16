@@ -32,7 +32,7 @@
 .vg-arrow {
   fill: none; stroke: var(--vg-arrow); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 1; stroke-dashoffset: 1;
-  transition: stroke-dashoffset 0.55s var(--ease-out) calc(var(--k) * 55ms + 80ms), stroke 0.2s, stroke-width 0.2s;
+  transition: stroke-dashoffset 0.5s cubic-bezier(0.33, 1, 0.68, 1) calc(var(--k) * 35ms + 120ms), stroke 0.2s, stroke-width 0.2s;
 }
 .vg-lg .vg-arrow { stroke-width: 1.7; }
 .vg-arrow.is-hot { stroke: var(--accent); stroke-width: 2; }
@@ -59,7 +59,7 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vg-leaf {
   display: grid; justify-items: inherit; gap: 0; min-width: 0; max-width: 100%;
   opacity: 0; transform: translateX(calc(var(--dir, 1) * -8px));
-  transition: opacity 0.45s var(--ease-out) calc(var(--k) * 55ms + 300ms), transform 0.5s var(--ease-out) calc(var(--k) * 55ms + 300ms);
+  transition: opacity 0.4s ease-out calc(var(--k) * 35ms + 320ms), transform 0.5s cubic-bezier(0.33, 1, 0.68, 1) calc(var(--k) * 35ms + 320ms);
 }
 .vg-side.is-left .vg-leaf { --dir: -1; }
 .vg-fan.is-drawn .vg-leaf { opacity: 1; transform: none; }
@@ -105,6 +105,47 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vg-fan.is-step .vg-leaf.is-current { opacity: 1; }
 .vg-leaf .vg-w { border-radius: 8px; transition: background 0.3s, box-shadow 0.3s; }
 .vg-fan.is-step .vg-leaf.is-current .vg-w { background: var(--accent-soft); box-shadow: 0 0 0 5px var(--accent-soft); }
+
+/* Ring: each side bent into half an ellipse (positions set by vocab.js). */
+.vg-fan.vg-ring { display: block; min-height: 0; }
+.vg-ring > .vg-side { display: contents; }
+.vg-ring > .vg-hub { position: absolute; left: 0; top: 0; }
+.vg-ring .vg-leaf {
+  position: absolute; left: 0; top: 0; width: max-content; max-width: 210px;
+  text-align: center; justify-items: center; transform: translate(var(--tx, 0), var(--ty, 0));
+}
+.vg-ring .vg-en { max-width: 13em; }
+.vg-ring:not(.is-laid) .vg-hub, .vg-ring:not(.is-laid) .vg-leaf { visibility: hidden; }
+.vg-nofx .vg-leaf, .vg-nofx .vg-arrow { transition: none !important; }
+.vg-ring.is-drawn .vg-leaf { transform: none; }
+.vg-ring.is-step .vg-leaf { transform: translate(var(--tx, 0), var(--ty, 0)); }
+.vg-ring.is-step .vg-leaf.is-shown { transform: none; }
+
+/* Pinyin / meaning switched off from the graph page */
+.no-py .vg-pyt, .no-py .vg-hub-py, .no-py .vgp-spy { display: none; }
+.no-en .vg-en, .no-en .vgp-sen { display: none; }
+
+/* Hover card for a partner character */
+.vg-pop {
+  position: fixed; z-index: 90; left: 0; top: 0; max-width: 260px; padding: 10px 14px 10px; border-radius: 14px; pointer-events: none;
+  background: var(--surface); color: var(--ink); box-shadow: var(--shadow-lg), inset 0 0 0 1px var(--line-2);
+  opacity: 0; transform: translateY(4px); transition: opacity 0.16s ease-out, transform 0.2s ease-out;
+}
+.vg-pop.is-below { transform: translateY(-4px); }
+.vg-pop.is-on { opacity: 1; transform: none; }
+.vg-pop::after {
+  content: ""; position: absolute; left: var(--ax, 50%); bottom: -6px; width: 12px; height: 12px; margin-left: -6px;
+  background: var(--surface); box-shadow: 1px 1px 0 var(--line-2); transform: rotate(45deg);
+}
+.vg-pop.is-below::after { bottom: auto; top: -6px; box-shadow: -1px -1px 0 var(--line-2); }
+.vg-pop-top { display: flex; align-items: baseline; gap: 10px; }
+.vg-pop-c { font-size: 30px; line-height: 1.1; color: var(--indigo); }
+.vg-pop-py { font-weight: 600; font-size: 15px; color: var(--accent); }
+.vg-pop-en { font-size: 14px; line-height: 1.4; color: var(--ink-2); margin-top: 2px; }
+.vg-pop-en i { font: italic 500 13px/1 var(--font-display); color: var(--ink-3); }
+.vg-pop-go { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 7px; border-top: 1px dashed var(--line-2); font-size: 12px; color: var(--ink-3); }
+.vg-pop-go.is-link { color: var(--accent); font-weight: 600; }
+.vg-pop-go svg { width: 13px; height: 13px; }
 
 /* Narrow cards: everything branches to the right of the hub. */
 .vg-fan-wrap, .vgp-fan, .vg-show-fan, .vq-fan { container-type: inline-size; }
@@ -219,7 +260,11 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vgp-pos:empty { display: none; }
 .vgp-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.vgp-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 330px); gap: 18px; align-items: start; padding-bottom: 40px; }
+/* The graph gets the full width; the side panels sit beside it only on wide screens. */
+.vgp-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; padding-bottom: 40px; }
+/* a new graph fades in instead of sliding the whole page */
+.page-vgraph .vgp-titlebar, .page-vgraph .vgp-side { animation: vgp-in 0.32s ease-out both; }
+@keyframes vgp-in { from { opacity: 0.25; } }
 .vgp-stage { padding: 14px 20px 18px; display: grid; gap: 10px; border-radius: var(--radius-lg); }
 .vgp-tools { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
 .vgp-tools .seg button { height: 32px; padding: 0 14px; font-size: 13.5px; }
@@ -227,8 +272,17 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vgp-keys { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; }
 .vgp-fan { padding: 8px 0; min-height: 240px; display: grid; align-items: center; }
 
-/* one-by-one bar under the graph */
-.vgp-stepbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px dashed var(--line-2); }
+/* footer: pinyin / meaning switches on the left, the one-by-one bar beside them */
+.vgp-foot { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding-top: 12px; border-top: 1px dashed var(--line-2); }
+.vgp-togs { display: flex; gap: 14px; flex-shrink: 0; }
+.vgp-tog { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 500; color: var(--ink-2); cursor: pointer; user-select: none; }
+.vgp-tog input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.vgp-tog-ui { position: relative; width: 34px; height: 20px; border-radius: 999px; background: var(--line-2); transition: background 0.2s; }
+.vgp-tog-ui::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.22s var(--ease-out); }
+.vgp-tog input:checked + .vgp-tog-ui { background: var(--accent); }
+.vgp-tog input:checked + .vgp-tog-ui::after { transform: translateX(14px); }
+.vgp-tog input:focus-visible + .vgp-tog-ui { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+.vgp-stepbar { flex: 1 1 360px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
 .vgp-stepbar[hidden] { display: none; }
 .vgp-stepbar .ctrl { width: 44px; height: 44px; }
 .vgp-stepbar .ctrl.is-primary { width: 44px; height: 44px; border-radius: 14px; }
@@ -240,11 +294,13 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vgp-shint { font-size: 13.5px; color: var(--ink-3); }
 .vgp-shint .han { color: var(--accent); font-size: 17px; }
 
-.vgp-side { display: grid; gap: 14px; align-content: start; }
-@media (min-width: 1061px) {
-  /* keep the side column inside the screen; it scrolls on its own if a family has many links */
-  .vgp-side { max-height: calc(100vh - var(--topbar-h) - 160px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 2px; margin: -2px; border-radius: var(--radius); }
-}
+.vgp-side { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; align-content: start; }
+.vgp-ph-py { font: 600 14px/1 var(--font-ui); color: var(--accent); letter-spacing: 0; text-transform: none; }
+.vg-box-py { font-size: 13px; font-weight: 600; color: var(--accent); align-self: center; }
+.vgp-alt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 14px; color: var(--ink-2); padding: 9px 12px; border-radius: 12px; background: var(--indigo-soft); }
+.vgp-alt a { display: inline-flex; align-items: baseline; gap: 6px; font-weight: 600; color: var(--indigo); }
+.vgp-alt a .han { font-size: 20px; font-weight: 400; }
+.vgp-alt a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .vgp-panel { padding: 16px 18px 18px; display: grid; gap: 10px; align-content: start; }
 .vgp-ph { font: 600 13px/1.2 var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: baseline; gap: 8px; }
 .vgp-ph .han { font-size: 18px; color: var(--accent); letter-spacing: 0; text-transform: none; }

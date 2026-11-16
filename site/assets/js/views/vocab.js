@@ -12,12 +12,6 @@
   function readingNotes(h) {
     const { WORDS, pyText } = VB();
     const out = [];
-    if (h.readings) {
-      const parts = h.readings.map((r) => r.py === "r"
-        ? `as a light <b>-r</b> added to the syllable before it in ${hanList(r.w.slice(0, 4))}${r.w.length > 4 ? ` and ${r.w.length - 4} more` : ""}`
-        : `<b>${r.py}</b> in ${hanList(r.w)}`);
-      out.push(`<b>Two readings.</b> ${parts.join("; ")}.`);
-    }
     if (h.sandhi) {
       const cite = h.py;
       out.push(`<b>Tone change.</b> ${h.h} is <b>${cite}</b> on its own, ` + h.sandhi.map((g) => `<b>${g.py}</b> in ${hanList(g.w)}`).join(" and ") +
@@ -45,7 +39,7 @@
       const st = VB().stats();
       const fresh = [...WORDS.values()].filter((w) => w.l === 2).length;
       // start with a family whose hub is a word of its own (儿 and 子 are mostly endings)
-      const firstNew = HUBS.find((h) => h.word && !VB().seen(h.h)) || HUBS.find((h) => h.word);
+      const firstNew = HUBS.find((h) => h.word && !VB().seen(h.id)) || HUBS.find((h) => h.word);
       const sort = App.store.setting("vgSort") || "size";
       const only = App.store.setting("vgNew") ? "new" : "all";
       const arrowIcon = `<svg viewBox="0 0 40 16" aria-hidden="true"><path d="M2 8H36M30 3l6 5-6 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -58,7 +52,7 @@
               <h1 class="title-xl">One character, <em>a family of words</em>.</h1>
               <p class="lede">Every word in the HSK 2 list that shares a character is drawn as a graph: the shared character in red, its words branching out. Know <span class="han">车</span> and you're already halfway to <span class="han">火车</span>, <span class="han">开车</span> and <span class="han">车站</span>.</p>
               <div class="btn-row">
-                <a class="btn btn-primary" href="${VB().href(firstNew.h)}">${st.seen ? "Continue with" : "Start with"} <span class="han">${firstNew.h}</span> ${App.icon.arrow}</a>
+                <a class="btn btn-primary" href="${VB().href(firstNew.id)}">${st.seen ? "Continue with" : "Start with"} <span class="han">${firstNew.h}</span> ${App.icon.arrow}</a>
                 <a class="btn" href="#/vocab/quiz">Quiz yourself</a>
               </div>
               <div class="hero-stats">
@@ -99,8 +93,8 @@
       const grid = $(".vg-grid", root), count = $(".vg-count", root), empty = $(".vg-empty", root), input = $(".vg-search input", root);
       const cards = new Map();
       HUBS.forEach((h) => {
-        const c = html(`<article class="card vg-card${VB().seen(h.h) ? " is-seen" : ""}" data-hub="${h.h}">
-          <a class="vg-box vg-box-link" href="${VB().href(h.h)}" aria-label="Open the graph of ${h.h}: ${h.en}"><span class="han vg-box-h">${h.h}</span><span class="vg-box-pos">${VB().posLine(h.pos)}</span><span class="vg-box-en">${h.en}</span>${App.icon.arrow}</a>
+        const c = html(`<article class="card vg-card${VB().seen(h.id) ? " is-seen" : ""}" data-hub="${h.id}">
+          <a class="vg-box vg-box-link" href="${VB().href(h.id)}" aria-label="Open the graph of ${h.h}: ${h.en}"><span class="han vg-box-h">${h.h}</span>${h.alt ? `<span class="py vg-box-py">${VB().hubPy(h)}</span>` : ""}<span class="vg-box-pos">${VB().posLine(h.pos)}</span><span class="vg-box-en">${h.en}</span>${App.icon.arrow}</a>
           <div class="vg-card-top"><span class="vg-card-n">${plural(h.leaves.length, "word")}</span>${h.fresh ? `<span class="vg-card-new">${h.fresh} new</span>` : ""}<span class="vg-card-seen" title="You've opened this graph">${App.icon.check}</span></div>
           <div class="vg-fan-wrap"></div>
         </article>`);
@@ -108,10 +102,10 @@
         // the whole card opens the graph; links inside it (blue characters) keep their own target
         c.addEventListener("click", (ev) => {
           if (ev.target.closest("a, button") || (window.getSelection && String(window.getSelection()).length)) return;
-          App.go(VB().href(h.h));
+          App.go(VB().href(h.id));
         });
         c._idx = this.index(h);
-        cards.set(h.h, c);
+        cards.set(h.id, c);
       });
 
       const state = { q: "", sort, only };
@@ -122,15 +116,15 @@
         let list = HUBS.filter((h) => {
           if (state.only === "new" && !h.fresh) return false;
           if (!q) return true;
-          const ix = cards.get(h.h)._idx;
+          const ix = cards.get(h.id)._idx;
           if (han) return [...q.replace(/[^㐀-鿿]/g, "")].every((ch) => ix.zh.includes(ch));
           return (qp && ix.py.includes(qp)) || ix.en.includes(q);
         });
         if (state.sort === "az") list = list.slice().sort((a, b) => a.key.localeCompare(b.key));
-        grid.replaceChildren(...list.map((h) => cards.get(h.h)));
+        grid.replaceChildren(...list.map((h) => cards.get(h.id)));
         count.textContent = list.length === HUBS.length ? `${HUBS.length} graphs` : `${list.length} of ${HUBS.length} graphs`;
         empty.hidden = !!list.length;
-        requestAnimationFrame(() => VB().redraw(list.map((h) => $(".vg-fan", cards.get(h.h)))));
+        requestAnimationFrame(() => VB().redraw(list.map((h) => $(".vg-fan", cards.get(h.id)))));
       };
       let t = 0;
       input.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => { state.q = input.value; apply(); }, 90); });
@@ -179,7 +173,9 @@
   App.views.vocabGraph = {
     section: "vocab",
     nav: "vocab",
-    title: (h) => `${h} · Graphs`,
+    // moving between graphs swaps the content in place (no full-page slide)
+    sameViewTransition: false,
+    title: (id) => { const h = VB().HUB.get(id); return `${h ? h.h + (h.alt ? " " + VB().hubPy(h) : "") : id} · Graphs`; },
     render(id) {
       const { HUBS, HUB, WORDS } = VB();
       const h = HUB.get(id);
@@ -189,21 +185,22 @@
         return html(`<div class="wrap page-head"><span class="eyebrow">Vocabulary graphs</span>
           <h1 class="title-lg">No graph for <span class="han">${id}</span></h1>
           <p class="lede">${WORDS.has(id) ? `<span class="han">${id}</span> is in the word list but shares no character with two other words.` : "Only characters that two or more HSK 2 words share have a graph."}</p>
-          ${homes.length ? `<p class="lede" style="margin-top:10px">It appears in: ${homes.map((x) => `<a class="vgp-inline" href="${VB().href(x.h)}"><span class="han">${x.h}</span></a>`).join(" ")}</p>` : ""}
+          ${homes.length ? `<p class="lede" style="margin-top:10px">It appears in: ${homes.map((x) => `<a class="vgp-inline" href="${VB().href(x.id)}"><span class="han">${x.h}</span></a>`).join(" ")}</p>` : ""}
           <div class="btn-row" style="margin-top:24px"><a class="btn btn-primary" href="#/vocab">All graphs ${App.icon.arrow}</a></div></div>`);
       }
-      VB().markSeen(h.h);
+      VB().markSeen(h.id);
       const prev = HUBS[(h.i - 1 + HUBS.length) % HUBS.length], next = HUBS[(h.i + 1) % HUBS.length];
       const nb = VB().neighbours(h);
       const notes = readingNotes(h);
       const own = h.word
         ? `<span class="han">${h.h}</span> is also a word on its own${h.l === 2 ? `, new in HSK 2 ${VB().NEW_TAG}` : " (HSK 1)"}.`
         : `<span class="han">${h.h}</span> isn't a word on its own in HSK 2. You meet it only inside these words.`;
-      const pos = !h.left.length ? `Starts all ${plural(h.right.length, "word")} (they branch right).`
+      const pos = h.leaves.length === 1 ? (h.right.length ? "Starts its one word (right)." : "Comes later in its one word (left).")
+        : !h.left.length ? `Starts all ${plural(h.right.length, "word")} (they branch right).`
         : !h.right.length ? `Never starts a word here: it comes later in all ${plural(h.left.length, "word")} (they branch left).`
         : `Starts ${plural(h.right.length, "word")} (right) and comes later in ${plural(h.left.length, "word")} (left).`;
 
-      const navBtn = (x, dir) => `<a class="vgp-nav-btn${dir > 0 ? " is-next" : ""}" href="${VB().href(x.h)}" title="${dir > 0 ? "Next" : "Previous"} graph: ${x.h} ${x.en}">
+      const navBtn = (x, dir) => `<a class="vgp-nav-btn${dir > 0 ? " is-next" : ""}" href="${VB().href(x.id)}" title="${dir > 0 ? "Next" : "Previous"} graph: ${x.h} ${x.en}">
         ${dir < 0 ? App.icon.prev : ""}<b class="han">${x.h}</b><small>${x.en}</small>${dir > 0 ? App.icon.next : ""}</a>`;
 
       const root = html(`<div class="page-vgraph">
@@ -233,17 +230,24 @@
               <button class="btn btn-sm btn-ghost vgp-replay" title="Draw it again (R)">${App.icon.replay}<span>Replay</span></button>
             </div>
             <div class="vgp-fan"></div>
-            <div class="vgp-stepbar" hidden>
-              <button class="ctrl vgp-sprev" aria-label="Previous word">${App.icon.prev}</button>
-              <div class="vgp-scur" aria-live="polite"></div>
-              <button class="ctrl is-primary vgp-snext" aria-label="Next word">${App.icon.next}</button>
+            <div class="vgp-foot">
+              <div class="vgp-togs" role="group" aria-label="Show under each word">
+                <label class="vgp-tog"><input type="checkbox" data-t="py"${App.store.setting("vgNoPy") ? "" : " checked"}><span class="vgp-tog-ui" aria-hidden="true"></span>Pinyin</label>
+                <label class="vgp-tog"><input type="checkbox" data-t="en"${App.store.setting("vgNoEn") ? "" : " checked"}><span class="vgp-tog-ui" aria-hidden="true"></span>Meaning</label>
+              </div>
+              <div class="vgp-stepbar" hidden>
+                <button class="ctrl vgp-sprev" aria-label="Previous word">${App.icon.prev}</button>
+                <div class="vgp-scur" aria-live="polite"></div>
+                <button class="ctrl is-primary vgp-snext" aria-label="Next word">${App.icon.next}</button>
+              </div>
             </div>
           </div>
 
           <aside class="vgp-side">
             <div class="card vgp-panel">
-              <h3 class="vgp-ph">About <span class="han">${h.h}</span></h3>
+              <h3 class="vgp-ph">About <span class="han">${h.h}</span>${h.alt ? `<span class="py vgp-ph-py">${VB().hubPy(h)}</span>` : ""}</h3>
               <p class="vgp-note">${h.note}</p>
+              ${(h.alt || []).map((a) => { const x = HUB.get(a); return `<p class="vgp-alt">Same character, another reading:<a href="${VB().href(x.id)}"><span class="han">${x.h}</span><span class="py">${VB().hubPy(x)}</span> ${x.en} ${App.icon.arrow}</a></p>`; }).join("")}
               <ul class="vgp-facts">
                 <li>${own}</li>
                 <li>${pos}</li>
@@ -252,18 +256,35 @@
             </div>
             ${nb.length ? `<div class="card vgp-panel">
               <h3 class="vgp-ph">Connected graphs <small class="muted">${nb.length}</small></h3>
-              <div class="vgp-nbs">${nb.map((n) => `<a class="vgp-nb" href="${VB().href(n.hub.h)}" title="${n.hub.h}: ${n.hub.en}"><b class="han">${n.hub.h}</b><small class="han">${n.via.slice(0, 2).join(" · ")}${n.via.length > 2 ? ` +${n.via.length - 2}` : ""}</small></a>`).join("")}</div>
+              <div class="vgp-nbs">${nb.map((n) => `<a class="vgp-nb" href="${VB().href(n.hub.id)}" title="${n.hub.h}: ${n.hub.en}"><b class="han">${n.hub.h}</b><small class="han">${n.via.slice(0, 2).join(" · ")}${n.via.length > 2 ? ` +${n.via.length - 2}` : ""}</small></a>`).join("")}</div>
             </div>` : ""}
           </aside>
         </section>
       </div>`);
 
-      // Size: big families switch to compact rows so the graph fits on one screen.
-      const small = window.matchMedia("(max-width: 640px)").matches;
+      // Layout: a straight column per side when it fits on screen; otherwise each side
+      // bends into half an ellipse around the hub (the "ring"), sized to the space left.
+      const small = window.matchMedia("(max-width: 720px)").matches;
       const most = Math.max(h.left.length, h.right.length);
-      const f = VB().fan(h, { size: small || most > 4 ? "md" : "lg", rows: !small && most > 6, ink: true, speak: true });
+      const avail = Math.max(360, Math.min(680, window.innerHeight - 360));
+      const columnsFit = most <= 3 || most * 82 <= avail;
+      const ring = !small && !columnsFit;
+      const f = VB().fan(h, { size: small || most > 3 ? "md" : "lg", ring, height: avail, ink: true, speak: true });
       $(".vgp-fan", root).appendChild(f);
       this.f = f;
+
+      /* ---- pinyin / meaning switches ---- */
+      const stage = $(".vgp-stage", root);
+      const applyTogs = () => {
+        stage.classList.toggle("no-py", !!App.store.setting("vgNoPy"));
+        stage.classList.toggle("no-en", !!App.store.setting("vgNoEn"));
+      };
+      $$(".vgp-tog input", root).forEach((inp) => inp.addEventListener("change", () => {
+        App.store.setting(inp.dataset.t === "py" ? "vgNoPy" : "vgNoEn", !inp.checked);
+        App.sfx.tick();
+        applyTogs();
+      }));
+      applyTogs();
 
       /* ---- one-by-one mode ---- */
       // words that start with the hub first, then the ones where it comes later; top to bottom
@@ -285,8 +306,8 @@
             (n === total ? `<span class="vgp-shint">All shown · <kbd>→</kbd> next graph <span class="han">${next.h}</span></span>` : "");
         }
       };
-      const fwd = () => { if (n < total) { n++; App.sfx.tick(); show(); } else App.go(VB().href(next.h)); };
-      const back = () => { if (n > 0) { n--; show(); } else App.go(VB().href(prev.h)); };
+      const fwd = () => { if (n < total) { n++; App.sfx.tick(); show(); } else App.go(VB().href(next.id)); };
+      const back = () => { if (n > 0) { n--; show(); } else App.go(VB().href(prev.id)); };
       $(".vgp-snext", root).addEventListener("click", fwd);
       $(".vgp-sprev", root).addEventListener("click", back);
       App.seg($(".vgp-mode", root), (v) => { App.store.setting("vgStep", v === "step"); n = 0; f.classList.add("is-drawn"); show(); });
@@ -295,11 +316,13 @@
       $(".vgp-replay", root).addEventListener("click", () => { App.sfx.tick(); n = 0; show(); VB().play(f); });
       App.onKey((ev) => {
         const on = this.stepMode();
-        if (ev.key === "ArrowRight") { if (on) fwd(); else App.go(VB().href(next.h)); return true; }
-        if (ev.key === "ArrowLeft") { if (on) back(); else App.go(VB().href(prev.h)); return true; }
+        if (ev.key === "ArrowRight") { if (on) fwd(); else App.go(VB().href(next.id)); return true; }
+        if (ev.key === "ArrowLeft") { if (on) back(); else App.go(VB().href(prev.id)); return true; }
         if (ev.key === "r" || ev.key === "R") { n = 0; show(); VB().play(f); return true; }
         if (ev.key === "s" || ev.key === "S") { $(`.vgp-mode button[data-v="${on ? "all" : "step"}"]`, root).click(); return true; }
         if (ev.key === "Enter" && on && n) { const b = $(".vgp-scur .speak", root); if (b) b.click(); return true; }
+        if (ev.key === "p" || ev.key === "P") { $('.vgp-tog input[data-t="py"]', root).click(); return true; }
+        if (ev.key === "m" || ev.key === "M") { $('.vgp-tog input[data-t="en"]', root).click(); return true; }
         return false;
       });
       show();
@@ -308,7 +331,8 @@
     },
     stepMode() { return !!App.store.setting("vgStep"); },
     mounted() {
-      if (this.h && this.f) VB().play(this.f);
+      // lay out before the first paint, then draw the hub while the words grow out
+      if (this.h && this.f) VB().play(this.f, { speed: 2.2 });
     }
   };
 
@@ -337,7 +361,8 @@
     const seenChars = new Set(leaves.join(""));
     // a distractor must not also make every shown word (that would be a second right answer)
     const fits = (d) => leaves.every((w) => WORDS.has(w.split(h.h).join(d)));
-    const ds = shuffle(HUBS.filter((x) => x.h.length === 1 && x !== h && !seenChars.has(x.h) && !fits(x.h))).slice(0, 3);
+    const pool = shuffle(HUBS.filter((x) => x.h.length === 1 && x.h !== h.h && !seenChars.has(x.h) && !fits(x.h)));
+    const ds = pool.filter((x, i) => pool.findIndex((y) => y.h === x.h) === i).slice(0, 3); // one option per character
     return { render: renderHubQ, hub: h, leaves, opts: shuffle([h, ...ds]) };
   }
   function meaningQuestion(h) {
@@ -353,7 +378,7 @@
   }
   function round() {
     const { HUBS } = VB();
-    const chars = HUBS.filter((h) => h.h.length === 1);
+    const chars = HUBS.filter((h) => h.h.length === 1 && h.leaves.length >= 2);
     const a = weighted(chars, 6, (h) => Math.min(h.leaves.length, 6));
     const b = weighted(HUBS.filter((h) => h.leaves.length >= 3 && !a.includes(h)), 4, (h) => Math.min(h.leaves.length, 6));
     return shuffle([...a.map(hubQuestion), ...b.map(meaningQuestion)]);
@@ -390,7 +415,7 @@
       host.replaceChildren(g);
       $$(".vg-h, .vg-hub-ch", g).forEach((n) => n.animate([{ transform: "scale(1.5)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 420, easing: "cubic-bezier(.34,1.56,.64,1)" }));
       if (ok) App.burstAt($(".vg-hub-ch", g), 0.6);
-      settle(ok, `<b class="han">${q.hub.h}</b> <span class="py">${VB().hubPy(q.hub)}</span>, ${q.hub.en}. ${q.hub.note} <a href="${VB().href(q.hub.h)}">Open the graph</a>`);
+      settle(ok, `<b class="han">${q.hub.h}</b> <span class="py">${VB().hubPy(q.hub)}</span>, ${q.hub.en}. ${q.hub.note} <a href="${VB().href(q.hub.id)}">Open the graph</a>`);
     }
     return { el, key: (ev) => { const n = +ev.key; if (n >= 1 && n <= btns.length) { choose(n - 1); return true; } return false; } };
   }

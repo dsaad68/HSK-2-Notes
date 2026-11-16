@@ -4,7 +4,10 @@ Build site/assets/js/data/vocab.js from the HSK 2 word list (exam-materials/voca
 
 Usage:
   pip install openpyxl
-  python3 site/tools/build_vocab.py [path/to/HSK-2.xls]
+  python3 site/tools/build_vocab.py --mmah /path/to/makemeahanzi [path/to/HSK-2.xls]
+
+  --mmah points at a Make Me a Hanzi checkout (dictionary.txt), the source of the
+  meaning shown when you hover a character that has no word or note of its own here.
 
 What it does
   1. Reads the sheet (columns 词语 拼音 翻译 词性 所在等级). The file is really .xlsx
@@ -16,23 +19,31 @@ What it does
      of the list becomes a hub. A character that only ever appears inside one
      two-character word (意 + 思 → 意思, 朋 + 友 → 朋友) is merged into a hub for
      that word; if that leaves fewer than two words, it is dropped.
-  4. Adds a meaning for hubs that are not a word on their own (CHAR_GLOSS) and a one-line
-     note on what each family has in common (THREAD).
+  4. Splits a hub whose character is read two ways into one graph per reading
+     (觉 jué / jiào, 好 hǎo / hào, 儿 ér / -r). The reading that matches the
+     character on its own keeps the plain id (觉); the other gets one like 觉-jiao4.
+  5. Adds a meaning for hubs that are not a word on their own (CHAR_GLOSS, SPLIT_GLOSS),
+     a one-line note on what each family has in common (THREAD), and a short meaning for
+     every character in the list (for the hover card).
 
 Everything editorial lives in the dictionaries below, so the Excel file stays untouched.
 Re-run after changing the word list, then run subset_font.py and build_data.mjs.
 """
+import argparse
 import json
 import pathlib
 import re
-import sys
 import unicodedata
 from collections import OrderedDict, defaultdict
 
 import openpyxl
 
 SITE = pathlib.Path(__file__).resolve().parent.parent
-SRC = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else SITE.parent / "exam-materials" / "vocab" / "HSK-2.xls"
+ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+ap.add_argument("xls", nargs="?", default=SITE.parent / "exam-materials" / "vocab" / "HSK-2.xls", type=pathlib.Path)
+ap.add_argument("--mmah", required=True, type=pathlib.Path, help="Make Me a Hanzi checkout (needs dictionary.txt)")
+ARGS = ap.parse_args()
+SRC = ARGS.xls
 OUT = SITE / "assets" / "js" / "data" / "vocab.js"
 
 # ---------------------------------------------------------------------------
@@ -159,6 +170,24 @@ EN_FIX = {
     "出门": "go out; leave home",
 }
 
+# Characters read two ways get one graph per reading. Key: hub id (see step 4 above).
+# The reading's own pinyin, part of speech and meaning (for 好 hǎo the word 好 is used).
+SPLIT_GLOSS = {
+    "儿": ("ér", ["名"], "child; son"),
+    "儿-r": ("r", ["后缀"], "[-r ending, no meaning of its own]"),
+    "好-hao4": ("hào", ["动"], "to like; to be fond of"),
+    "觉": ("jué", ["动"], "to feel; to sense"),
+    "觉-jiao4": ("jiào", ["名"], "sleep"),
+}
+
+# Hover-card meanings where Make Me a Hanzi's first senses are odd for a learner.
+CHAR_FIX = {
+    "眼": "eye", "苹": "apple (in 苹果)", "校": "school", "篮": "basket", "什": "what (in 什么)",
+    "漂": "to float; pretty (in 漂亮)", "识": "to know; knowledge", "颜": "face; colour",
+    "超": "to go beyond; super-", "馆": "hall; building for a purpose", "宜": "suitable; cheap (in 便宜)",
+    "便": "convenient; cheap (in 便宜)", "然": "so; like that", "所": "place; so (in 所以)",
+}
+
 # Meaning of hub characters that are not a word on their own in the list.
 CHAR_GLOSS = {
     "儿": ("ér", ["名", "后缀"], "child; [-r ending]"),
@@ -200,14 +229,16 @@ CHAR_GLOSS = {
 
 # What each family has in common (one line, shown under the graph).
 THREAD = {
-    "儿": "Two jobs. Read ér it means child: 儿子 son, 女儿 daughter. Added as a light -r it only rounds off the word: 哪儿 nǎr, 一会儿 yíhuìr.",
+    "儿": "Read ér, 儿 means child: 儿子 son, 女儿 daughter (the girl child). The same character also works as a light -r ending: see 儿 -r.",
+    "儿-r": "Here 儿 is not a syllable of its own: it adds a light -r to the one before, the northern way of speaking. 哪儿 nǎr where, 这儿 zhèr here, 一会儿 yíhuìr a while. It adds no meaning.",
     "学": "School and study: places (大学, 中学, 小学), people (学生, 同学) and actions (上学, 开学, 学习).",
     "上": "Up, on, and going to something: 上班 go to work, 上课 go to class, 上网 go online. At the end it means on (路上, 网上) or a time of day (早上, 晚上).",
     "子": "A light noun ending (zi) with no meaning of its own: 杯子, 桌子, 椅子. In 儿子 son and 孩子 child you can still hear its old meaning, child.",
     "生": "Life and people: 学生 student, 医生 doctor, 先生 Mr; and being alive: 生日 birthday, 生病 fall ill.",
     "面": "At the end, 面 means side: 前面, 后面, 上面, 下面, 里面, 外面. At the start it is flour: 面包 bread, 面条儿 noodles.",
     "下": "Down and finishing: 下来 come down, 下班 finish work, 下课 class is over, 下雨 rain falls. 下午 is the later half of the day.",
-    "好": "Good + a verb = good to do: 好吃 tasty, 好看 good-looking, 好听 nice to hear, 好玩儿 fun. In 爱好 hobby it is read hào, to like.",
+    "好": "Good + a verb = good to do: 好吃 tasty, 好看 good-looking, 好听 nice to hear, 好玩儿 fun. And the everyday greeting 你好.",
+    "好-hao4": "Read hào, 好 means to like, to be fond of: 爱好 hobby (love + like). Same character as 好 hǎo, good.",
     "来": "Movement toward the speaker: 进来 come in, 出来 come out, 回来 come back. Swap in 去 to move away.",
     "去": "Movement away from the speaker: 进去 go in, 出去 go out, 回去 go back. 去年 is last year, the year that went.",
     "小": "Small and young: 小孩儿 kid, 小朋友 child, 小学 primary school, 从小 since childhood. 小时 hour is the odd one out.",
@@ -279,7 +310,8 @@ THREAD = {
     "进": "Enter: 进来 come in, 进去 go in.",
     "今": "This, now: 今天 today, 今年 this year.",
     "经": "Pass through: 已经 already, 经常 often.",
-    "觉": "Two readings: jué to feel (觉得 think, feel) and jiào sleep (睡觉 to sleep).",
+    "觉": "Read jué, 觉 means to feel, to sense: 觉得 to think, to feel. Read jiào the same character is a sleep (睡觉).",
+    "觉-jiao4": "Read jiào, 觉 is a sleep: 睡觉 to sleep (literally sleep a sleep). Read jué the same character means to feel (觉得).",
     "病": "Illness: 生病 fall ill, 看病 see a doctor.",
     "可": "Can, may: 可以 can, may; 可能 maybe.",
     "以": "可以 can, may; 所以 so, therefore.",
@@ -409,10 +441,8 @@ for ch, b in sorted(bound.items()):
 
 missing = [h for h in hubs if h not in words and h not in CHAR_GLOSS]
 assert not missing, f"hubs without a meaning (add to CHAR_GLOSS): {missing}"
-no_thread = [h for h in hubs if h not in THREAD]
-assert not no_thread, f"hubs without a THREAD note: {no_thread}"
-stale = sorted((set(THREAD) | set(CHAR_GLOSS)) - set(hubs))
-assert not stale, f"notes for characters that are not hubs: {stale}"
+stale = sorted(set(CHAR_GLOSS) - set(hubs))
+assert not stale, f"CHAR_GLOSS for characters that are not hubs: {stale}"
 
 
 def reading_info(h, leaves):
@@ -451,27 +481,107 @@ def reading_info(h, leaves):
     return info
 
 
+def reading_id(h, s, cite):
+    """Hub id for one reading: the reading of the character on its own keeps the plain id."""
+    if s == cite:
+        return h
+    return f"{h}-r" if s == "r" else f"{h}-{base(s)}{tone(s)}"
+
+
+def split_by_reading(h, leaves, readings):
+    """{id: (reading, words)} for a character read two ways. Light-tone uses join the
+    reading with the same syllable, else the character's own reading."""
+    cite = words[h]["py"][0] if h in words else CHAR_GLOSS[h][0]
+    groups = OrderedDict((reading_id(h, g["py"], cite), (g["py"], [])) for g in readings)
+    for w in leaves:
+        s = words[w]["py"][w.index(h)]
+        key = next((k for k, (r, _) in groups.items() if r == s), None)
+        if key is None:
+            key = next((k for k, (r, _) in groups.items() if base(r) == base(s)), reading_id(h, cite, cite))
+        groups[key][1].append(w)
+    return groups
+
+
 out_hubs = []
 for h, leaves in hubs.items():
+    info = reading_info(h, leaves)
+    if "readings" in info:  # one graph per reading
+        parts = split_by_reading(h, leaves, info["readings"])
+        ids = list(parts)
+        for hid, (reading, ws_) in parts.items():
+            e = words.get(h) if hid == h else None
+            py, pos, en = SPLIT_GLOSS[hid] if hid in SPLIT_GLOSS else (" ".join(e["py"]), e["pos"], e["en"])
+            hub = {"id": hid, "h": h, "py": py, "pos": pos, "en": en, "word": bool(e), "leaves": ws_,
+                   "note": THREAD[hid], "alt": [x for x in ids if x != hid]}
+            if e:
+                hub["l"] = e["l"]
+            sub = reading_info(h, ws_)
+            sub.pop("readings", None)
+            hub.update(sub)
+            out_hubs.append(hub)
+        continue
     e = words.get(h)
     py, pos, en = (" ".join(e["py"]), e["pos"], e["en"]) if e else CHAR_GLOSS[h]
-    if h == "觉":
-        py = "jué jiào"
-    hub = {"h": h, "py": py, "pos": pos, "en": en, "word": bool(e), "leaves": leaves, "note": THREAD[h]}
+    hub = {"id": h, "h": h, "py": py, "pos": pos, "en": en, "word": bool(e), "leaves": leaves, "note": THREAD[h]}
     if e:
         hub["l"] = e["l"]
-    hub.update(reading_info(h, leaves))
+    hub.update(info)
     out_hubs.append(hub)
+
+ids = [hub["id"] for hub in out_hubs]
+no_thread = [i for i in ids if i not in THREAD]
+assert not no_thread, f"graphs without a THREAD note: {no_thread}"
+stale = sorted((set(THREAD) | set(SPLIT_GLOSS)) - set(ids))
+assert not stale, f"THREAD / SPLIT_GLOSS entries for graphs that don't exist: {stale}"
+
+
+# ---------------------------------------------------------------------------
+# A short meaning for every character (hover card): the list's own word, our
+# note for the hub, or else Make Me a Hanzi's dictionary.
+# ---------------------------------------------------------------------------
+def short_def(d):
+    d = re.sub(r"\s*\((?:Cant|Jap|Kor)\.?\)[^;,]*", "", d)
+    senses = [s.strip() for s in re.split(r"[;]", d) if s.strip()]
+    out = []
+    for s in senses:
+        if out and len("; ".join(out + [s])) > 40:
+            break
+        out.append(s)
+    text = "; ".join(out)
+    return text if len(text) <= 60 else text[:57].rsplit(",", 1)[0]
+
+
+needed = sorted({ch for w in words for ch in w})
+mmah = {}
+with open(ARGS.mmah / "dictionary.txt", encoding="utf8") as f:
+    for line in f:
+        o = json.loads(line)
+        if o["character"] in needed:
+            mmah[o["character"]] = o
+chars = {}
+for ch in needed:
+    if ch in words:
+        chars[ch] = [words[ch]["py"][0], words[ch]["en"]]
+    elif ch in CHAR_GLOSS:
+        chars[ch] = [CHAR_GLOSS[ch][0], CHAR_GLOSS[ch][2]]
+    elif ch in mmah and (mmah[ch].get("definition") or ch in CHAR_FIX):
+        chars[ch] = [(mmah[ch].get("pinyin") or [""])[0], CHAR_FIX.get(ch) or short_def(mmah[ch]["definition"])]
+stale = sorted(set(CHAR_FIX) - set(chars))
+assert not stale, f"CHAR_FIX for characters not in the list: {stale}"
+no_meaning = [ch for ch in needed if ch not in chars]
+if no_meaning:
+    print("no meaning for:", " ".join(no_meaning))
 
 data = {
     "source": "exam-materials/vocab/HSK-2.xls",
     "words": list(words.values()),
     "hubs": out_hubs,
+    "chars": chars,
 }
 banner = (f"/* HSK 2 vocabulary ({len(words)} words) and its character graphs.\n"
           "   Generated by site/tools/build_vocab.py from exam-materials/vocab/HSK-2.xls — do not edit by hand. */\n")
 js = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-js = js.replace('{"w":', '\n{"w":').replace('{"h":', '\n{"h":')
+js = js.replace('{"w":', '\n{"w":').replace('{"id":', '\n{"id":').replace('"chars":{', '\n"chars":{\n')
 OUT.write_text(banner + "window.HSK_VOCAB=" + js + ";\n", encoding="utf8")
 
 linked = {w for hub in out_hubs for w in hub["leaves"]} | {h["h"] for h in out_hubs if h["word"]}
@@ -479,7 +589,8 @@ print(f"{len(words)} words ({sum(1 for w in words.values() if w['l'] == 2)} new 
       f"{len(out_hubs)} graphs, {len(linked)} words linked")
 print("merged into word hubs:", ", ".join(f"{c}→{b}" for c, b in sorted(bound.items())))
 for hub in out_hubs:
-    for k in ("readings", "sandhi"):
-        if k in hub:
-            print(f"  {hub['h']} {k}: " + " · ".join(f"{g['py']} {'/'.join(g['w'])}" for g in hub[k]))
+    if "alt" in hub:
+        print(f"  split by reading: {hub['id']} ({hub['py']}): {'/'.join(hub['leaves'])}")
+    if "sandhi" in hub:
+        print(f"  {hub['h']} tone change: " + " · ".join(f"{g['py']} {'/'.join(g['w'])}" for g in hub["sandhi"]))
 print(f"wrote {OUT.relative_to(SITE.parent)} ({OUT.stat().st_size // 1024} KB)")

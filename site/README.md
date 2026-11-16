@@ -8,7 +8,7 @@ The landing page (`#/`) lists the five parts in exam order. Three are ready:
 
 | # | Part | Where | Status |
 | --- | --- | --- | --- |
-| 01 | 词汇 Vocabulary | `#/vocab` | **ready**: 106 character graphs from the 497-word list, quiz |
+| 01 | 词汇 Vocabulary | `#/vocab` | **ready**: 109 character graphs from the 497-word list, quiz |
 | 02 | 语法 Grammar | | coming soon |
 | 03 | 词组 Expressions | `#/expressions` | **ready**: 14 lessons, 42 expressions |
 | 04 | 偏旁 Writing · Radicals | `#/radicals` | **ready**: 30 radicals, 15 exam sets |
@@ -34,11 +34,13 @@ The HSK 2 word list (`exam-materials/vocab/HSK-2.xls`, 500 rows = 497 words; 点
 Every character that two or more words share becomes a **hub**: the hub in red, its words around it, each with pinyin and meaning.
 Words that **start** with the hub branch right (上 → 上班, 上课), words where it comes **later** branch left (晚上, 路上 ← 上), so the structure is visible at a glance.
 A character that only ever appears inside one two-character word is merged into a hub for that word (意 + 思 → 意思, 朋 + 友 → 朋友).
+A character read two ways gets one graph per reading: 觉 jué (觉得) and 觉 jiào (睡觉), 好 hǎo and 好 hào (爱好), 儿 ér (儿子, 女儿) and 儿 -r (哪儿, 这儿 …).
+Each links to the other ("same character, another reading"), and a blue character always links to the graph of the reading it has in that word.
 
 | Page | What it does |
 | --- | --- |
-| **Graphs 图** (`#/vocab`) | All 106 graphs as cards, each with its meaning on top; click anywhere on a card to open it. Search by character, toneless pinyin or English, show only graphs with words that are new in HSK 2, and sort by size or A–Z. Partner characters in blue are links to their own graph. |
-| **One graph** (`#/vocab/学`) | Fits on one laptop screen: previous / next graph sit at the top next to *All graphs*, and big families (7+ words on a side) switch to compact rows. The hub is written with the brush, then the arrows and words draw in; each word has a listen button. **All words** shows the whole family; **One by one** reveals the words one at a time (`→` next word, `←` back; past the last word `→` moves on to the next graph, `Enter` plays the current word). A side panel has a one-line note on what the family has in common, whether the hub is a word on its own, how it sounds inside its words (two readings like 好 hǎo / hào, 觉 jué / jiào, 儿 ér / -r; the tone changes of 一 and 不; light tones like 晚上 wǎnshang), and every connected graph. In *All words* mode `←` `→` move between graphs; `S` switches mode, `R` replays. |
+| **Graphs 图** (`#/vocab`) | All 109 graphs as cards, each with its meaning on top; click anywhere on a card to open it. Search by character, toneless pinyin or English, show only graphs with words that are new in HSK 2, and sort by size or A–Z. Partner characters in blue are links to their own graph. |
+| **One graph** (`#/vocab/学`) | Fits on one laptop screen. Small families stand in a straight column per side; families that wouldn't fit bend each side into half an ellipse around the hub, so the words spread out instead of stacking (`vocab.js` widens only the crowded side until no two words touch). Previous / next graph sit at the top next to *All graphs*; moving between graphs swaps the content in place while the hub is inked and the words glide out of it. Hover a blue character for a card with its pinyin (as read in that word) and meaning; click it to open its graph. Characters without a graph (影 in 电影) show their meaning too. Switches at the bottom left hide or show the **Pinyin** and **Meaning** (`P`, `M`). **All words** shows the whole family; **One by one** reveals the words one at a time (`→` next word, `←` back; past the last word `→` moves on to the next graph, `Enter` plays the current word). Under the graph: a one-line note on what the family has in common, whether the hub is a word on its own, light tones (晚上 wǎnshang) and the tone changes of 一 and 不, and every connected graph. In *All words* mode `←` `→` move between graphs; `S` switches mode, `R` replays. |
 | **Quiz 练** (`#/vocab/quiz`) | Ten questions, a new mix each round: six graphs with the shared character blanked out (pick it from four; distractors that would also make every shown word are excluded) and four asking the meaning of one word, with the other words of the family as the wrong answers. |
 
 Marker: 新 = new in HSK 2 (the sheet's “New HSK2” tag), not in HSK 1.
@@ -86,7 +88,7 @@ Plain HTML, CSS and JavaScript with no build step.
 
 - `assets/js/ink.js` is the SVG brush-stroke renderer. It can draw any subset of a character's strokes, re-centre a radical, and animate strokes with a moving brush tip.
 - `assets/js/exam.js` has the shared exam UI: option tiles, 田字格 word tiles with the gap, the flight animation and drag-and-drop.
-- `assets/js/data/vocab.js` holds the cleaned word list and the graphs, **generated** by `tools/build_vocab.py` from the Excel file. The script also holds the editorial data: gloss fixes, the meaning of hubs that aren't words on their own, and the one-line note for every graph. `assets/js/vocab.js` lays out and draws the graphs (arrows are an SVG overlay measured from the laid-out words); `assets/js/views/vocab.js` has the overview, graph and quiz pages.
+- `assets/js/data/vocab.js` holds the cleaned word list and the graphs, **generated** by `tools/build_vocab.py` from the Excel file. The script also holds the editorial data: gloss fixes, the meaning of hubs that aren't words on their own (and of each reading of 觉, 好, 儿), and the one-line note for every graph. The hover-card meaning of characters that aren't words or hubs comes from Make Me a Hanzi's `dictionary.txt` (a few odd ones are overridden in `CHAR_FIX`). `assets/js/vocab.js` lays out and draws the graphs (arrows are an SVG overlay measured from the laid-out words); `assets/js/views/vocab.js` has the overview, graph and quiz pages.
 - `assets/js/data/sections.js` lists the five parts (landing page and top-bar links). `assets/js/views/hub.js` is the landing page.
 - `assets/js/data/expressions.js` holds the 42 expressions: per-character pinyin, which piece of each source word is kept, the gloss, the pattern, an example sentence, and each lesson's three questions. `assets/js/expr.js` has the builder animation and the quiz; `assets/js/views/expressions.js` has the overview, lesson and review pages.
 - `assets/js/data/content.js` holds the radicals and exam sets. Edit it to fix or extend explanations.
@@ -96,13 +98,13 @@ Plain HTML, CSS and JavaScript with no build step.
 - `assets/css/fonts.css` is a subset of the LXGW WenKai font, **generated** by `tools/subset_font.py`. Re-run it after adding new Chinese text.
 
 ```sh
-python3 site/tools/build_vocab.py                             # needs openpyxl; reads exam-materials/vocab/HSK-2.xls
+python3 site/tools/build_vocab.py --mmah /path/to/makemeahanzi   # needs openpyxl; reads exam-materials/vocab/HSK-2.xls
 node site/tools/build_data.mjs /path/to/makemeahanzi          # needs graphics.txt + dictionary.txt
 python3 site/tools/subset_font.py LXGWWenKai-Regular.ttf LXGWWenKai-Medium.ttf
 ```
 
 ## Credits
 
-- Stroke outlines and medians: [Make Me a Hanzi](https://github.com/skishore/makemeahanzi) (Arphic Public License / LGPL)
+- Stroke outlines and medians, and the character meanings on the vocabulary hover cards: [Make Me a Hanzi](https://github.com/skishore/makemeahanzi) (Arphic Public License / LGPL)
 - Handwriting quiz: [Hanzi Writer](https://hanziwriter.org) (MIT), vendored in `assets/vendor/`
 - Chinese font: [LXGW WenKai](https://github.com/lxgw/LxgwWenKai) (SIL OFL 1.1)

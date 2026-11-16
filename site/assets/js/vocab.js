@@ -1,7 +1,9 @@
 /* ==========================================================================
    Vocabulary graphs — data model and the fan renderer
    One hub character in red, its words branching out: words that start with
-   the hub go right, words that end with it (or hold it inside) go left.
+   the hub go right, words where it comes later go left.
+   Two layouts: "columns" (a straight column per side) and "ring" (each side
+   bent into half an ellipse, for families too big for a column on screen).
    ========================================================================== */
 (function () {
   "use strict";
@@ -10,22 +12,34 @@
 
   /* ---------------- data ---------------- */
   const WORDS = new Map(V.words.map((w) => [w.w, w]));
+  const CHARS = V.chars || {};
   const MARKS = { "ā": "a1", "á": "a2", "ǎ": "a3", "à": "a4", "ē": "e1", "é": "e2", "ě": "e3", "è": "e4", "ī": "i1", "í": "i2", "ǐ": "i3", "ì": "i4",
     "ō": "o1", "ó": "o2", "ǒ": "o3", "ò": "o4", "ū": "u1", "ú": "u2", "ǔ": "u3", "ù": "u4", "ǖ": "v1", "ǘ": "v2", "ǚ": "v3", "ǜ": "v4", "ü": "v0" };
+  const TONED = /[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]/g;
   /** "xué" → "xue2" (toneless + tone digit, for sorting) */
-  const pyKey = (s) => { let t = "0"; const b = s.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]/g, (m) => { t = MARKS[m][1]; return MARKS[m][0]; }); return b + t; };
-  const plain = (s) => s.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]/g, (m) => MARKS[m][0].replace("v", "u"));
+  const pyKey = (s) => { let t = "0"; const b = s.replace(TONED, (m) => { t = MARKS[m][1]; return MARKS[m][0]; }); return b + t; };
+  const plain = (s) => s.replace(TONED, (m) => MARKS[m][0].replace("v", "u"));
 
-  const HUBS = V.hubs.slice().sort((a, b) => b.leaves.length - a.leaves.length || pyKey(a.py).localeCompare(pyKey(b.py)));
-  const HUB = new Map(HUBS.map((h) => [h.h, h]));
-  const WORD_HUBS = HUBS.filter((h) => h.h.length > 1).map((h) => h.h);
+  const HUBS = V.hubs.slice().sort((a, b) => b.leaves.length - a.leaves.length || pyKey(a.py).localeCompare(pyKey(b.py)) || a.id.localeCompare(b.id));
+  const HUB = new Map(HUBS.map((h) => [h.id, h]));
+  const WORD_HUBS = HUBS.filter((h) => h.h.length > 1);
+  const CHAR_HUBS = new Map();
   HUBS.forEach((h, i) => {
     h.i = i;
     h.right = h.leaves.filter((w) => w.startsWith(h.h));
     h.left = h.leaves.filter((w) => !w.startsWith(h.h));
     h.fresh = h.leaves.filter((w) => WORDS.get(w).l === 2).length;
+    if (h.h.length === 1) CHAR_HUBS.set(h.h, (CHAR_HUBS.get(h.h) || []).concat(h));
   });
-  const LINKED = new Set(HUBS.flatMap((h) => h.word ? [h.h, ...h.leaves] : h.leaves));
+  const LINKED = new Set(HUBS.flatMap((h) => (h.word ? [h.h, ...h.leaves] : h.leaves)));
+
+  /** The graph a character belongs to, given how it is read in this word (觉 jué vs jiào). */
+  function hubFor(ch, syl) {
+    const list = CHAR_HUBS.get(ch);
+    if (!list) return null;
+    if (list.length === 1) return list[0];
+    return list.find((h) => h.py === syl) || list.find((h) => syl && plain(h.py) === plain(syl)) || list.find((h) => h.id === ch) || list[0];
+  }
 
   const POS = { "名": "n.", "动": "v.", "形": "adj.", "副": "adv.", "代": "pron.", "数": "num.", "量": "m.", "介": "prep.", "连": "conj.", "助": "part.", "叹": "interj.", "前缀": "prefix", "后缀": "suffix", "数量": "num.+m." };
   const posLine = (pos) => (pos || []).map((p) => POS[p] || p).join(" ");
@@ -38,7 +52,7 @@
     }).join("");
   }
   const pyText = (sylls) => pyHTML(sylls).replace(/<\/?b>/g, "");
-  const hubPy = (h) => h.h.length > 1 ? pyText(h.py.split(" ")) : h.py.split(" ").join(" · ");
+  const hubPy = (h) => (h.py === "r" ? "-r" : h.h.length > 1 ? pyText(h.py.split(" ")) : h.py.split(" ").join(" · "));
 
   /** Positions of the hub inside a word. */
   function hubMask(w, h) {
@@ -49,21 +63,25 @@
   }
 
   /** Split a word into runs: the hub, links to other graphs, plain characters. */
-  function runs(w, h) {
-    const chars = Array.from(w), mask = hubMask(w, h);
+  function runs(w, hub) {
+    const chars = Array.from(w), mask = hubMask(w, hub.h), py = WORDS.get(w).py;
     const tag = chars.map((c, i) => (mask[i] ? { t: "hub" } : null));
     for (const wh of WORD_HUBS) {
-      if (wh === h) continue;
-      const i = w.indexOf(wh);
-      if (i < 0 || tag.slice(i, i + wh.length).some(Boolean)) continue;
-      for (let k = 0; k < wh.length; k++) tag[i + k] = { t: "link", to: wh };
+      if (wh === hub) continue;
+      const i = w.indexOf(wh.h);
+      if (i < 0 || tag.slice(i, i + wh.h.length).some(Boolean)) continue;
+      for (let k = 0; k < wh.h.length; k++) tag[i + k] = { t: "link", to: wh.id };
     }
-    chars.forEach((c, i) => { if (!tag[i]) tag[i] = HUB.has(c) && c !== h ? { t: "link", to: c } : { t: "plain" }; });
+    chars.forEach((c, i) => {
+      if (tag[i]) return;
+      const to = hubFor(c, py[i]);
+      tag[i] = to && to !== hub ? { t: "link", to: to.id } : { t: "plain" };
+    });
     const out = [];
     chars.forEach((c, i) => {
       const last = out[out.length - 1], g = tag[i];
-      if (last && last.t === g.t && (g.t !== "link" || last.to === g.to) && g.t !== "plain") last.s += c;
-      else out.push({ t: g.t, to: g.to, s: c });
+      if (last && last.t === g.t && g.t !== "plain" && (g.t !== "link" || last.to === g.to)) { last.s += c; last.py.push(py[i]); }
+      else out.push({ t: g.t, to: g.to, s: c, py: [py[i]] });
     });
     return out;
   }
@@ -71,7 +89,7 @@
   /** Other graphs reachable from this one, with the words that lead there. */
   function neighbours(h) {
     const map = new Map();
-    h.leaves.forEach((w) => runs(w, h.h).forEach((r) => {
+    h.leaves.forEach((w) => runs(w, h).forEach((r) => {
       if (r.t !== "link") return;
       if (!map.has(r.to)) map.set(r.to, []);
       if (!map.get(r.to).includes(w)) map.get(r.to).push(w);
@@ -79,15 +97,16 @@
     return [...map.entries()].map(([to, via]) => ({ hub: HUB.get(to), via })).sort((a, b) => b.via.length - a.via.length || a.hub.i - b.hub.i);
   }
 
-  const href = (h) => `#/vocab/${encodeURIComponent(h)}`;
+  const href = (id) => `#/vocab/${encodeURIComponent(id)}`;
   const NEW_TAG = `<i class="vg-new" title="New in HSK 2 (not in HSK 1)">新</i>`;
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 
   /* ---------------- fan ---------------- */
   /**
    * @param {object} h   hub
    * @param {object} o
    *   size     'sm' | 'md' | 'lg'
-   *   rows     compact rows: pinyin and meaning beside the word (for big families)
+   *   ring     bend each side into half an ellipse; `height` is the space to fill
    *   links    link the hub and partner characters to their graphs (default true)
    *   ink      draw the hub with the brush (needs stroke data) instead of text
    *   speak    add a listen button to each word
@@ -103,15 +122,16 @@
     let k = 0;
     const leaf = (w, side) => {
       const e = WORDS.get(w), mask = hubMask(w, h.h);
-      const word = runs(w, h.h).map((r) => {
+      const word = runs(w, h).map((r) => {
+        const data = `data-c="${r.s}" data-py="${esc(pyText(r.py))}"`;
         if (r.t === "hub") return o.mask ? Array.from(r.s).map(() => `<b class="vg-h vg-blank" aria-label="missing character">？</b>`).join("") : `<b class="vg-h">${r.s}</b>`;
-        if (r.t === "link" && o.links) return `<a class="vg-link" href="${href(r.to)}" title="Open the graph of ${r.to}">${r.s}</a>`;
-        return `<span class="vg-p">${r.s}</span>`;
+        if (r.t === "link" && o.links) return `<a class="vg-link" href="${href(r.to)}" ${data} data-to="${esc(r.to)}">${r.s}</a>`;
+        return `<span class="vg-p" ${data}${r.t === "link" ? ` data-to="${esc(r.to)}"` : ""}>${r.s}</span>`;
       }).join("");
       const py = o.mask ? pyHTML(e.py.map((s, i) => (mask[i] ? "＿" : s)), mask) : pyHTML(e.py, mask);
       const asked = o.ask === w;
       return `<div class="vg-leaf${asked ? " is-asked" : ""}" data-w="${w}" data-side="${side}" style="--k:${k++}">
-        <span class="py vg-py"><span>${py}</span>${o.speak ? App.speakBtn(w, pyText(e.py)) : ""}</span>
+        <span class="py vg-py"><span class="vg-pyt">${py}</span>${o.speak ? App.speakBtn(w, pyText(e.py)) : ""}</span>
         <span class="han vg-w">${word}${e.l === 2 ? NEW_TAG : ""}</span>
         <span class="vg-en">${asked ? "?" : o.noEn ? "" : e.en}</span>
       </div>`;
@@ -121,14 +141,16 @@
       ? `<span class="vg-hub-ch vg-hub-q han">？</span>`
       : o.ink
         ? `<span class="vg-hub-ch vg-hub-ink" data-chars="${h.h}">${Array.from(h.h).map(() => `<span class="vg-ink-cell"></span>`).join("")}</span>`
-        : o.links ? `<a class="vg-hub-ch han" href="${href(h.h)}" title="Open the graph of ${h.h}">${h.h}</a>` : `<span class="vg-hub-ch han">${h.h}</span>`;
-    const el = html(`<div class="vg-fan vg-${o.size}${o.rows ? " vg-rows" : ""}${left.length ? "" : " no-left"}${right.length ? "" : " no-right"}" data-hub="${h.h}">
+        : o.links ? `<a class="vg-hub-ch han" href="${href(h.id)}" aria-label="Open the graph of ${h.h}">${h.h}</a>` : `<span class="vg-hub-ch han">${h.h}</span>`;
+    const cls = ["vg-fan", `vg-${o.size}`, o.ring ? "vg-ring" : "", left.length ? "" : "no-left", right.length ? "" : "no-right"].filter(Boolean).join(" ");
+    const el = html(`<div class="${cls}" data-hub="${esc(h.id)}"${o.links ? " data-pop" : ""}>
       <svg class="vg-arrows" aria-hidden="true"></svg>
       ${left.length ? `<div class="vg-side is-left">${L}</div>` : ""}
       <div class="vg-hub"><span class="py vg-hub-py">${o.mask ? "?" : hubPy(h)}</span>${hubInner}</div>
       ${right.length ? `<div class="vg-side is-right">${R}</div>` : ""}
     </div>`);
     el._n = k;
+    el._ringH = o.height || 460;
     // hovering a word lights up its arrow
     el.addEventListener("pointerover", (ev) => { const lf = ev.target.closest(".vg-leaf"); hot(el, lf ? $$(".vg-leaf", el).indexOf(lf) : -1); });
     el.addEventListener("pointerleave", () => hot(el, -1));
@@ -161,8 +183,99 @@
     const cells = $$(".vg-ink-cell", box), chars = Array.from(box.dataset.chars);
     const inks = cells.map((c, i) => { c.replaceChildren(); return App.ink(c, chars[i], { shown: false, label: chars[i] }); });
     if (opts && opts.shown) { inks.forEach((k) => k.showAll()); return true; }
-    for (const k of inks) if (!(await k.animate({ speed: (opts && opts.speed) || 1.5, gap: 60 }))) return false;
+    for (const k of inks) if (!(await k.animate({ speed: (opts && opts.speed) || 2, gap: 40 }))) return false;
     return true;
+  }
+
+  /* ---------------- ring layout ---------------- */
+  // Each side is half an ellipse around the hub: right half for words that start with it,
+  // left half for the others. The horizontal radii grow until no two words overlap.
+  function ellipsePoints(n, a, b, cx, cy, dir) {
+    if (!n) return [];
+    const N = 160, pts = [], len = [0];
+    for (let i = 0; i <= N; i++) {
+      const t = (Math.PI * i) / N; // 0 = top, π/2 = side, π = bottom
+      pts.push([cx + dir * a * Math.sin(t), cy - b * Math.cos(t)]);
+      if (i) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    }
+    const total = len[N], out = [];
+    for (let k = 0; k < n; k++) {
+      const s = ((k + 0.5) / n) * total;
+      let j = 1; while (j < N && len[j] < s) j++;
+      const f = (s - len[j - 1]) / ((len[j] - len[j - 1]) || 1);
+      out.push([pts[j - 1][0] + f * (pts[j][0] - pts[j - 1][0]), pts[j - 1][1] + f * (pts[j][1] - pts[j - 1][1])]);
+    }
+    return out;
+  }
+  const overlaps = (r, s, gap) => r.x < s.x + s.w + gap && s.x < r.x + r.w + gap && r.y < s.y + s.h + gap && s.y < r.y + r.h + gap;
+
+  function ringLayout(el) {
+    const W = el.clientWidth; if (!W) return;
+    const hubEl = $(".vg-hub", el);
+    const L = $$(".is-left .vg-leaf", el), R = $$(".is-right .vg-leaf", el);
+    const size = (n) => ({ w: n.offsetWidth, h: n.offsetHeight });
+    const hs = size(hubEl), ls = L.map(size), rs = R.map(size), all = [...ls, ...rs];
+    if (!all.length) return;
+    const itemW = Math.max(...all.map((s) => s.w)), itemH = Math.max(...all.map((s) => s.h));
+    const extL = (L.length ? itemW / 2 : hs.w / 2) + 6, extR = (R.length ? itemW / 2 : hs.w / 2) + 6;
+    const room = W - extL - extR; // aL + aR may use this much
+    const gap = 10;
+    const tryLayout = (aL, aR, b) => {
+      const cx = (W - (aL + extL + aR + extR)) / 2 + aL + extL, cy = b + itemH / 2 + 6;
+      const pl = ellipsePoints(L.length, aL, b, cx, cy, -1), pr = ellipsePoints(R.length, aR, b, cx, cy, 1);
+      const boxes = [...pl.map((p, i) => ({ x: p[0] - ls[i].w / 2, y: p[1] - ls[i].h / 2, w: ls[i].w, h: ls[i].h })),
+                     ...pr.map((p, i) => ({ x: p[0] - rs[i].w / 2, y: p[1] - rs[i].h / 2, w: rs[i].w, h: rs[i].h }))];
+      const hub = { x: cx - hs.w / 2, y: cy - hs.h / 2, w: hs.w, h: hs.h };
+      // count clashes per side so only the crowded side gets wider
+      let badL = 0, badR = 0, badX = 0;
+      const nl = pl.length;
+      for (let i = 0; i < boxes.length; i++) {
+        const side = i < nl ? "L" : "R";
+        if (overlaps(boxes[i], hub, gap + 6)) side === "L" ? badL++ : badR++;
+        for (let j = i + 1; j < boxes.length; j++) {
+          if (!overlaps(boxes[i], boxes[j], gap)) continue;
+          if (j < nl) badL++; else if (i >= nl) badR++; else badX++;
+        }
+      }
+      return { cx, cy, b, boxes, badL, badR, badX, bad: badL + badR + badX, H: 2 * b + itemH + 12 };
+    };
+    const b0 = Math.max(hs.h / 2 + itemH / 2 + 24, (el._ringH - itemH - 12) / 2);
+    let best = null;
+    for (let b = b0; b <= b0 * 1.7 && !(best && !best.bad); b += 20) {
+      // start each side nearly round, then widen only the side that still has clashes
+      const start = (n) => (n ? Math.min(room / (L.length && R.length ? 2 : 1), Math.max(b * 0.85, itemW * 0.7)) : 0);
+      let aL = start(L.length), aR = start(R.length);
+      for (let guard = 0; guard < 120; guard++) {
+        const r = tryLayout(aL, aR, b);
+        if (!best || r.bad < best.bad) best = r;
+        if (!r.bad) break;
+        const free = room - aL - aR;
+        if (free < 1) break;
+        const gL = L.length && (r.badL || r.badX), gR = R.length && (r.badR || r.badX);
+        const step = Math.min(free, 16);
+        if (gL && gR) { const wl = L.length / (L.length + R.length); aL += step * wl; aR += step * (1 - wl); }
+        else if (gL) aL += step;
+        else if (gR) aR += step;
+        else break;
+      }
+    }
+    // write (the first time without transitions, so the words start from their slide-in offset)
+    const first = !el.classList.contains("is-laid");
+    if (first) el.classList.add("vg-nofx");
+    el.style.height = best.H + "px";
+    hubEl.style.left = best.cx - hs.w / 2 + "px";
+    hubEl.style.top = best.cy - hs.h / 2 + "px";
+    [...L, ...R].forEach((lf, i) => {
+      const bx = best.boxes[i];
+      lf.style.left = bx.x + "px";
+      lf.style.top = bx.y + "px";
+      // entry: slide out from the hub
+      const dx = best.cx - (bx.x + bx.w / 2), dy = best.cy - (bx.y + bx.h / 2), d = Math.hypot(dx, dy) || 1;
+      lf.style.setProperty("--tx", ((dx / d) * 16).toFixed(1) + "px");
+      lf.style.setProperty("--ty", ((dy / d) * 16).toFixed(1) + "px");
+    });
+    el.classList.add("is-laid");
+    if (first) { void el.offsetWidth; el.classList.remove("vg-nofx"); }
   }
 
   /* ---------------- arrows ---------------- */
@@ -172,21 +285,34 @@
     while (e && e !== root) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; }
     return { x, y, w: n.offsetWidth, h: n.offsetHeight };
   };
+  /** How far along (dx, dy) a ray from (x, y) runs before leaving box b. */
+  function exitT(x, y, dx, dy, b) {
+    let t = Infinity;
+    if (dx > 0) t = Math.min(t, (b.x + b.w - x) / dx); else if (dx < 0) t = Math.min(t, (b.x - x) / dx);
+    if (dy > 0) t = Math.min(t, (b.y + b.h - y) / dy); else if (dy < 0) t = Math.min(t, (b.y - y) / dy);
+    return Math.max(0, Math.min(1, t));
+  }
+  const grow = (b, p) => ({ x: b.x - p, y: b.y - p, w: b.w + 2 * p, h: b.h + 2 * p });
   function measure(el) {
     if (!el.isConnected || !el.offsetWidth) return null;
-    const hub = $(".vg-hub-ch", el); if (!hub) return null;
-    const hb = box(hub, el);
+    const ch = $(".vg-hub-ch", el), hubEl = $(".vg-hub", el); if (!ch) return null;
+    const ring = el.classList.contains("vg-ring");
     const big = el.classList.contains("vg-lg") ? 1 : el.classList.contains("vg-md") ? 0.8 : 0.6;
-    const pad = 8 * big;
-    const cx = hb.x + hb.w / 2, cy = hb.y + hb.h / 2;
+    const cb = box(ch, el), hb = grow(box(hubEl, el), 6 * big);
+    const cx = cb.x + cb.w / 2, cy = cb.y + cb.h / 2;
     const lines = $$(".vg-leaf", el).map((lf) => {
-      const b = box(lf, el), w = $(".vg-w", lf), wb = w ? box(w, el) : b;
-      const toRight = b.x + b.w / 2 > cx;
-      const sx = toRight ? hb.x + hb.w + pad : hb.x - pad;
-      // aim at the characters, not the whole block (a long meaning can be wider than the word)
-      const ex = toRight ? wb.x - pad * 1.2 : wb.x + wb.w + pad * 1.2;
-      const ey = wb.y + wb.h / 2;
-      return { sx, sy: cy, ex, ey };
+      if (ring) {
+        // ring: from the hub's edge straight towards the word block, stopping at its edge
+        const target = box(lf, el), tb = grow(target, 7 * big);
+        const tx = target.x + target.w / 2, ty = target.y + target.h / 2, dx = tx - cx, dy = ty - cy;
+        const t0 = exitT(cx, cy, dx, dy, hb), t1 = 1 - exitT(tx, ty, -dx, -dy, tb);
+        return { sx: cx + dx * t0, sy: cy + dy * t0, ex: cx + dx * t1, ey: cy + dy * t1 };
+      }
+      // columns: end at the inner edge of the characters, so no arrow crosses another word
+      const wb = box($(".vg-w", lf) || lf, el), toRight = wb.x + wb.w / 2 > cx, pad = 8 * big;
+      const ex = toRight ? wb.x - pad : wb.x + wb.w + pad, ey = wb.y + wb.h / 2, dx = ex - cx, dy = ey - cy;
+      const t0 = exitT(cx, cy, dx, dy, hb);
+      return { sx: cx + dx * t0, sy: cy + dy * t0, ex, ey };
     });
     return { W: el.offsetWidth, H: el.offsetHeight, lines, head: 9 * big + 3 };
   }
@@ -194,43 +320,101 @@
     const svg = $(".vg-arrows", el); if (!svg || !g) return;
     svg.setAttribute("viewBox", `0 0 ${g.W} ${g.H}`);
     svg.setAttribute("width", g.W); svg.setAttribute("height", g.H);
-    const was = $$(".vg-arrow", svg).map((p) => p.classList.contains("is-hot"));
-    const leaves = $$(".vg-leaf", el);
-    svg.innerHTML = g.lines.map((l, k) => {
+    const f = (n) => n.toFixed(1);
+    const ds = g.lines.map((l) => {
       const a = Math.atan2(l.ey - l.sy, l.ex - l.sx), s = g.head, sp = 0.45;
       const h1 = [l.ex - s * Math.cos(a - sp), l.ey - s * Math.sin(a - sp)], h2 = [l.ex - s * Math.cos(a + sp), l.ey - s * Math.sin(a + sp)];
-      const f = (n) => n.toFixed(1);
+      return `M${f(l.sx)} ${f(l.sy)}L${f(l.ex)} ${f(l.ey)}M${f(h1[0])} ${f(h1[1])}L${f(l.ex)} ${f(l.ey)}L${f(h2[0])} ${f(h2[1])}`;
+    });
+    const paths = $$(".vg-arrow", svg);
+    if (paths.length === ds.length) { paths.forEach((p, k) => { if (p.getAttribute("d") !== ds[k]) p.setAttribute("d", ds[k]); }); return; }
+    // first paint: carry the step state over from the words
+    const leaves = $$(".vg-leaf", el);
+    svg.innerHTML = ds.map((d, k) => {
       const lf = leaves[k], st = lf ? (lf.classList.contains("is-shown") ? " is-shown" : "") + (lf.classList.contains("is-current") ? " is-cur" : "") : "";
-      return `<path class="vg-arrow${was[k] ? " is-hot" : ""}${st}" pathLength="1" style="--k:${k}" d="M${f(l.sx)} ${f(l.sy)}L${f(l.ex)} ${f(l.ey)}M${f(h1[0])} ${f(h1[1])}L${f(l.ex)} ${f(l.ey)}L${f(h2[0])} ${f(h2[1])}"/>`;
+      return `<path class="vg-arrow${st}" pathLength="1" style="--k:${k}" d="${d}"/>`;
     }).join("");
   }
-  let ro = null;
+  let ro = null, pending = new Set(), raf = 0;
   const fans = new Set();
+  /** Lay out (ring) and draw arrows for these fans: reads first, then writes. */
   function redraw(list) {
-    const geo = list.map((el) => [el, measure(el)]); // all reads first …
-    geo.forEach(([el, g]) => paint(el, g));          // … then all writes
+    list.filter((el) => el.isConnected && el.classList.contains("vg-ring")).forEach(ringLayout);
+    const geo = list.map((el) => [el, measure(el)]);
+    geo.forEach(([el, g]) => paint(el, g));
   }
+  const later = (els) => {
+    els.forEach((e) => pending.add(e));
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; const l = [...pending]; pending.clear(); redraw(l); });
+  };
   function watch(el) {
     fans.add(el);
-    if (!ro && "ResizeObserver" in window) ro = new ResizeObserver((ents) => redraw([...new Set(ents.map((e) => e.target.closest(".vg-fan")))].filter(Boolean)));
-    if (ro) { ro.observe(el); $$(".vg-side", el).forEach((s) => ro.observe(s)); }
-    requestAnimationFrame(() => redraw([el]));
+    if (!ro && "ResizeObserver" in window) ro = new ResizeObserver((ents) => later([...new Set(ents.map((e) => e.target.closest(".vg-fan")))].filter(Boolean)));
+    const parts = () => [el, ...$$(".vg-side", el), ...(el.classList.contains("vg-ring") ? $$(".vg-leaf", el) : [])];
+    if (ro) parts().forEach((p) => ro.observe(p));
+    later([el]);
     // forget the fan when the view changes
-    App.onCleanup(() => { fans.delete(el); if (ro) { ro.unobserve(el); $$(".vg-side", el).forEach((s) => ro.unobserve(s)); } });
+    App.onCleanup(() => { fans.delete(el); if (ro) parts().forEach((p) => ro.unobserve(p)); });
   }
   const live = () => [...fans].filter((f) => f.isConnected);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => redraw(live()));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => later(live()));
 
-  /** Draw a fan in: hub ink (if any), then arrows and words. */
-  async function play(el, o) {
+  /** Draw a fan in: the hub is inked while the arrows and words grow out of it. */
+  function play(el, o) {
     el.classList.remove("is-drawn");
-    void el.offsetWidth;
-    if (!(await inkHub(el, o))) return false;
-    if (!el.isConnected) return false;
     redraw([el]);
+    void el.offsetWidth;
+    const inked = inkHub(el, o);
     requestAnimationFrame(() => el.classList.add("is-drawn"));
-    return true;
+    return inked;
   }
+
+  /* ---------------- hover card for partner characters ---------------- */
+  let pop = null, popT = 0, popFor = null;
+  function popEl() {
+    if (pop) return pop;
+    pop = html(`<div class="vg-pop" role="tooltip" hidden><div class="vg-pop-top"><span class="han vg-pop-c"></span><span class="py vg-pop-py"></span></div><div class="vg-pop-en"></div><div class="vg-pop-go"></div></div>`);
+    document.body.appendChild(pop);
+    return pop;
+  }
+  function showPop(t) {
+    const c = t.dataset.c, to = t.dataset.to ? HUB.get(t.dataset.to) : null;
+    const isLink = t.matches("a.vg-link");
+    const meaning = to ? to.en : (WORDS.get(c) || {}).en || (CHARS[c] || [])[1] || "";
+    const pos = to ? posLine(to.pos) : c.length === 1 && WORDS.get(c) ? posLine(WORDS.get(c).pos) : "";
+    const p = popEl();
+    $(".vg-pop-c", p).textContent = c;
+    $(".vg-pop-py", p).textContent = t.dataset.py || (CHARS[c] || [])[0] || "";
+    $(".vg-pop-en", p).innerHTML = (pos ? `<i>${pos}</i> ` : "") + esc(meaning);
+    $(".vg-pop-go", p).innerHTML = to && isLink ? `Click to open its graph · ${to.leaves.length} words ${App.icon.arrow}` : to ? `Has its own graph · ${to.leaves.length} words` : "No graph of its own in HSK 2";
+    $(".vg-pop-go", p).classList.toggle("is-link", !!(to && isLink));
+    p.hidden = false;
+    const r = t.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight;
+    const above = r.top > ph + 16;
+    const x = Math.max(8, Math.min(innerWidth - pw - 8, r.left + r.width / 2 - pw / 2));
+    p.style.left = x + "px";
+    p.style.top = (above ? r.top - ph - 10 : r.bottom + 10) + "px";
+    p.style.setProperty("--ax", r.left + r.width / 2 - x + "px");
+    p.classList.toggle("is-below", !above);
+    p.classList.remove("is-on"); void p.offsetWidth; p.classList.add("is-on");
+    popFor = t;
+  }
+  function hidePop() { if (pop) { pop.hidden = true; pop.classList.remove("is-on"); } popFor = null; }
+  const popTarget = (n) => (n && n.closest ? n.closest(".vg-fan[data-pop] [data-c]") : null);
+  document.addEventListener("pointerover", (e) => {
+    const t = popTarget(e.target);
+    clearTimeout(popT);
+    if (t) { if (t !== popFor) popT = setTimeout(() => showPop(t), 110); }
+    else if (popFor) popT = setTimeout(hidePop, 90);
+  });
+  document.addEventListener("focusin", (e) => { const t = popTarget(e.target); if (t) showPop(t); else hidePop(); });
+  document.addEventListener("pointerdown", (e) => {
+    // touch: a tap on a plain character shows its meaning for a moment
+    const t = popTarget(e.target);
+    if (t && e.pointerType === "touch" && !t.matches("a")) { showPop(t); clearTimeout(popT); popT = setTimeout(hidePop, 2600); }
+  });
+  window.addEventListener("scroll", () => { if (popFor) hidePop(); }, { passive: true });
+  window.addEventListener("hashchange", hidePop);
 
   /* ---------------- showcase: cycle through a few graphs ---------------- */
   function showcase(host, list, o) {
@@ -261,7 +445,7 @@
         cap.classList.add("is-on");
         await sleep(o.hold + f._n * 90); if (!ok()) return;
         if (!App.reduceMotion()) {
-          await f.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(-6px)" }], { duration: 260, fill: "forwards" }).finished.catch(() => {});
+          await f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" }).finished.catch(() => {});
           if (!ok()) return;
         }
         i = (i + 1) % list.length;
@@ -274,13 +458,13 @@
 
   /* ---------------- progress ---------------- */
   const st = () => { const s = App.store.state; s.vocab = s.vocab || {}; s.vocab.seen = s.vocab.seen || {}; return s.vocab; };
-  const seen = (h) => !!st().seen[h];
-  const markSeen = (h) => { if (!seen(h)) { st().seen[h] = Date.now(); App.store.save(); } };
+  const seen = (id) => !!st().seen[id];
+  const markSeen = (id) => { if (!seen(id)) { st().seen[id] = Date.now(); App.store.save(); } };
   const recordQuiz = (score, total) => {
     const q = (st().quiz = st().quiz || { best: 0, tries: 0 });
     q.tries++; q.last = score; q.total = total; q.best = Math.max(q.best, score); q.at = Date.now(); App.store.save();
   };
-  const stats = () => ({ hubs: HUBS.length, seen: HUBS.filter((h) => seen(h.h)).length, quiz: st().quiz || null });
+  const stats = () => ({ hubs: HUBS.length, seen: HUBS.filter((h) => seen(h.id)).length, quiz: st().quiz || null });
 
-  App.vocab = { V, WORDS, HUBS, HUB, LINKED, POS, posLine, pyHTML, pyText, hubPy, plain, runs, neighbours, href, NEW_TAG, fan, step, play, inkHub, redraw, showcase, seen, markSeen, recordQuiz, stats, shuffle };
+  App.vocab = { V, WORDS, CHARS, HUBS, HUB, LINKED, POS, posLine, pyHTML, pyText, hubPy, plain, runs, neighbours, href, NEW_TAG, fan, step, play, inkHub, redraw, showcase, seen, markSeen, recordQuiz, stats, shuffle, hidePop };
 })();

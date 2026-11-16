@@ -210,7 +210,8 @@
   }
   document.addEventListener("keydown", (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.target && e.target.matches && e.target.matches("input, textarea, select")) return;
+    // ignore keys typed into text fields (switches and checkboxes keep the shortcuts working)
+    if (e.target && e.target.matches && e.target.matches("input:not([type=checkbox]):not([type=radio]), textarea, select")) return;
     for (const fn of scope.keys) if (fn(e) === true) { e.preventDefault(); break; }
   });
 
@@ -260,8 +261,15 @@
   App.seg = (root, onChange) => {
     const pill = document.createElement("span"); pill.className = "seg-pill"; root.prepend(pill);
     const btns = $$("button", root);
-    const place = () => { const b = btns.find((x) => x.getAttribute("aria-pressed") === "true") || btns[0]; pill.style.left = b.offsetLeft + "px"; pill.style.width = b.offsetWidth + "px"; };
-    btns.forEach((b) => b.addEventListener("click", () => { btns.forEach((x) => x.setAttribute("aria-pressed", x === b)); place(); onChange && onChange(b.dataset.v); }));
+    // Snap into place on load (no slide-in from the left edge); only animate when the learner switches.
+    let clicked = false;
+    const place = () => {
+      const b = btns.find((x) => x.getAttribute("aria-pressed") === "true") || btns[0];
+      if (!clicked) pill.style.transition = "none";
+      pill.style.left = b.offsetLeft + "px"; pill.style.width = b.offsetWidth + "px";
+      if (!clicked) { void pill.offsetWidth; pill.style.transition = ""; }
+    };
+    btns.forEach((b) => b.addEventListener("click", () => { clicked = true; btns.forEach((x) => x.setAttribute("aria-pressed", x === b)); place(); onChange && onChange(b.dataset.v); }));
     requestAnimationFrame(place); setTimeout(place, 300);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
     return { place };
@@ -304,6 +312,8 @@
     if (!view) return;
     const key = name + ":" + params.join("/");
     if (key === currentKey) return;
+    // a view can ask to swap in place when moving between its own pages (no full-page slide)
+    const sameView = currentKey.split(":")[0] === name;
     currentKey = key;
     const swap = () => {
       clearScope();
@@ -322,7 +332,7 @@
       App.animateRings(main);
       view.mounted && view.mounted.apply(view, params);
     };
-    if (!first && document.startViewTransition && !reduceMotion()) document.startViewTransition(swap);
+    if (!first && document.startViewTransition && !reduceMotion() && !(sameView && view.sameViewTransition === false)) document.startViewTransition(swap);
     else swap();
     first = false;
   }
