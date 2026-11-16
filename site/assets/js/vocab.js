@@ -122,11 +122,11 @@
       const e = WORDS.get(w), mask = hubMask(w, h.h);
       const word = runs(w, h).map((r) => {
         const data = `data-c="${r.s}" data-py="${esc(pyText(r.py))}"`;
-        if (r.t === "hub") return o.mask ? Array.from(r.s).map(() => `<b class="vg-h vg-blank" aria-label="missing character">？</b>`).join("") : `<b class="vg-h">${r.s}</b>`;
+        if (r.t === "hub") return o.mask ? Array.from(r.s).map(() => `<b class="vg-h vg-blank" role="img" aria-label="missing character"></b>`).join("") : `<b class="vg-h">${r.s}</b>`;
         if (r.t === "link" && o.links) return `<a class="vg-link" href="${href(r.to)}" ${data} data-to="${esc(r.to)}">${r.s}</a>`;
         return `<span class="vg-p" ${data}${r.t === "link" ? ` data-to="${esc(r.to)}"` : ""}>${r.s}</span>`;
       }).join("");
-      const py = o.mask ? pyHTML(e.py.map((s, i) => (mask[i] ? "＿" : s)), mask) : pyHTML(e.py, mask);
+      const py = o.mask ? pyHTML(e.py.map((s, i) => (mask[i] ? `<i class="vg-pyblank" aria-label="missing syllable"></i>` : s)), mask) : pyHTML(e.py, mask);
       const asked = o.ask === w;
       return `<div class="vg-leaf${asked ? " is-asked" : ""}" data-w="${w}" data-side="${side}" style="--k:${k++}">
         <span class="py vg-py"><span class="vg-pyt">${py}</span>${o.speak ? App.speakBtn(w, pyText(e.py)) : ""}</span>
@@ -136,7 +136,7 @@
     };
     const L = left.map((w) => leaf(w, "l")).join(""), R = right.map((w) => leaf(w, "r")).join("");
     const hubInner = o.mask
-      ? `<span class="vg-hub-ch vg-hub-q han">？</span>`
+      ? `<span class="vg-hub-ch vg-hub-q" role="img" aria-label="missing character"></span>`
       : o.ink
         ? `<span class="vg-hub-ch vg-hub-ink" data-chars="${h.h}">${Array.from(h.h).map(() => `<span class="vg-ink-cell"></span>`).join("")}</span>`
         : o.links ? `<a class="vg-hub-ch han" href="${href(h.id)}" aria-label="Open the graph of ${h.h}">${h.h}</a>` : `<span class="vg-hub-ch han">${h.h}</span>`;
