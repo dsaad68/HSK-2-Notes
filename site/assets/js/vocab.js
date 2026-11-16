@@ -44,12 +44,10 @@
   const POS = { "名": "n.", "动": "v.", "形": "adj.", "副": "adv.", "代": "pron.", "数": "num.", "量": "m.", "介": "prep.", "连": "conj.", "助": "part.", "叹": "interj.", "前缀": "prefix", "后缀": "suffix", "数量": "num.+m." };
   const posLine = (pos) => (pos || []).map((p) => POS[p] || p).join(" ");
 
-  /** Join syllables the way pinyin is written: nǎ + r → nǎr, nǚ + ér → nǚ'ér. */
+  /** Syllables with a little space between them, so each lines up with its character
+      (shàng bān); erhua stays on the syllable before it (nǎr). */
   function pyHTML(sylls, mark) {
-    return sylls.map((s, i) => {
-      const ap = i > 0 && s !== "r" && /^[aeoāáǎàēéěèōóǒò]/.test(s) ? "'" : "";
-      return ap + (mark && mark[i] ? `<b>${s}</b>` : s);
-    }).join("");
+    return sylls.map((s, i) => (i > 0 && s !== "r" ? " " : "") + (mark && mark[i] ? `<b>${s}</b>` : s)).join("");
   }
   const pyText = (sylls) => pyHTML(sylls).replace(/<\/?b>/g, "");
   const hubPy = (h) => (h.py === "r" ? "-r" : h.h.length > 1 ? pyText(h.py.split(" ")) : h.py.split(" ").join(" · "));
@@ -188,84 +186,140 @@
   }
 
   /* ---------------- ring layout ---------------- */
-  // Each side is half an ellipse around the hub: right half for words that start with it,
-  // left half for the others. The horizontal radii grow until no two words overlap.
-  function ellipsePoints(n, a, b, cx, cy, dir) {
-    if (!n) return [];
-    const N = 160, pts = [], len = [0];
-    for (let i = 0; i <= N; i++) {
-      const t = (Math.PI * i) / N; // 0 = top, π/2 = side, π = bottom
-      pts.push([cx + dir * a * Math.sin(t), cy - b * Math.cos(t)]);
-      if (i) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-    }
-    const total = len[N], out = [];
-    for (let k = 0; k < n; k++) {
-      const s = ((k + 0.5) / n) * total;
-      let j = 1; while (j < N && len[j] < s) j++;
+  // Words that don't fit in a straight column go round the hub on an ellipse.
+  //   "half": each side is its own half ellipse (right = words that start with the hub,
+  //           left = the rest); only the crowded side gets wider.
+  //   "full": one shared ellipse; the start-words stay centred on the right and the
+  //           others wrap round the top, left and bottom (for lopsided families).
+  // Tried in that order, at full size and then a size down; the first that fits wins.
+
+  /** n points spaced evenly (by arc length) along a curve given as sampled points. */
+  function spread(pts, n, offset) {
+    const len = [0];
+    for (let i = 1; i < pts.length; i++) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const total = len[len.length - 1], at = (s) => {
+      s = ((s % total) + total) % total;
+      let j = 1; while (j < len.length - 1 && len[j] < s) j++;
       const f = (s - len[j - 1]) / ((len[j] - len[j - 1]) || 1);
-      out.push([pts[j - 1][0] + f * (pts[j][0] - pts[j - 1][0]), pts[j - 1][1] + f * (pts[j][1] - pts[j - 1][1])]);
-    }
-    return out;
+      return [pts[j - 1][0] + f * (pts[j][0] - pts[j - 1][0]), pts[j - 1][1] + f * (pts[j][1] - pts[j - 1][1])];
+    };
+    return { total, at };
+  }
+  /** Half ellipse from top to bottom on one side (dir -1 left, 1 right); n words centred in equal slots. */
+  function halfPoints(n, a, b, cx, cy, dir) {
+    if (!n) return [];
+    const pts = [];
+    for (let i = 0; i <= 160; i++) { const t = (Math.PI * i) / 160; pts.push([cx + dir * a * Math.sin(t), cy - b * Math.cos(t)]); }
+    const c = spread(pts);
+    return Array.from({ length: n }, (_, k) => c.at(((k + 0.5) / n) * c.total));
+  }
+  /** Whole ellipse: right group centred at 3 o'clock (top→bottom), left group centred at 9 o'clock (top→bottom). */
+  function fullPoints(nL, nR, a, b, cx, cy) {
+    const pts = [];
+    for (let i = 0; i <= 320; i++) { const t = (2 * Math.PI * i) / 320; pts.push([cx + a * Math.cos(t), cy + b * Math.sin(t)]); } // clockwise from 3 o'clock
+    const c = spread(pts), s = c.total / (nL + nR);
+    const right = Array.from({ length: nR }, (_, k) => c.at(s * (k - (nR - 1) / 2)));
+    const left = Array.from({ length: nL }, (_, k) => c.at(c.total / 2 + s * ((nL - 1) / 2 - k)));
+    return { left, right };
   }
   const overlaps = (r, s, gap) => r.x < s.x + s.w + gap && s.x < r.x + r.w + gap && r.y < s.y + s.h + gap && s.y < r.y + r.h + gap;
 
-  function ringLayout(el) {
-    const W = el.clientWidth; if (!W) return;
-    const hubEl = $(".vg-hub", el);
-    const L = $$(".is-left .vg-leaf", el), R = $$(".is-right .vg-leaf", el);
+  function ringMeasure(el) {
+    const hubEl = $(".vg-hub", el), L = $$(".is-left .vg-leaf", el), R = $$(".is-right .vg-leaf", el);
     const size = (n) => ({ w: n.offsetWidth, h: n.offsetHeight });
     const hs = size(hubEl), ls = L.map(size), rs = R.map(size), all = [...ls, ...rs];
-    if (!all.length) return;
-    const itemW = Math.max(...all.map((s) => s.w)), itemH = Math.max(...all.map((s) => s.h));
-    const extL = (L.length ? itemW / 2 : hs.w / 2) + 6, extR = (R.length ? itemW / 2 : hs.w / 2) + 6;
-    const room = W - extL - extR; // aL + aR may use this much
-    const gap = 10;
-    const tryLayout = (aL, aR, b) => {
-      const cx = (W - (aL + extL + aR + extR)) / 2 + aL + extL, cy = b + itemH / 2 + 6;
-      const pl = ellipsePoints(L.length, aL, b, cx, cy, -1), pr = ellipsePoints(R.length, aR, b, cx, cy, 1);
+    if (!all.length) return null;
+    return { hubEl, hs, L, R, ls, rs, itemW: Math.max(...all.map((s) => s.w)), itemH: Math.max(...all.map((s) => s.h)) };
+  }
+
+  /** Lay the words out in `mode` with vertical radius b; returns the attempt with the fewest clashes. */
+  function ringTry(m, W, mode, b) {
+    const { hs, L, R, ls, rs, itemW, itemH } = m, gap = 8;
+    const cy = b + itemH / 2 + 6;
+    const score = (cx, pl, pr) => {
       const boxes = [...pl.map((p, i) => ({ x: p[0] - ls[i].w / 2, y: p[1] - ls[i].h / 2, w: ls[i].w, h: ls[i].h })),
                      ...pr.map((p, i) => ({ x: p[0] - rs[i].w / 2, y: p[1] - rs[i].h / 2, w: rs[i].w, h: rs[i].h }))];
-      const hub = { x: cx - hs.w / 2, y: cy - hs.h / 2, w: hs.w, h: hs.h };
-      // count clashes per side so only the crowded side gets wider
+      const hub = { x: cx - hs.w / 2, y: cy - hs.h / 2, w: hs.w, h: hs.h }, nl = pl.length;
       let badL = 0, badR = 0, badX = 0;
-      const nl = pl.length;
       for (let i = 0; i < boxes.length; i++) {
-        const side = i < nl ? "L" : "R";
-        if (overlaps(boxes[i], hub, gap + 6)) side === "L" ? badL++ : badR++;
+        if (overlaps(boxes[i], hub, gap + 6)) i < nl ? badL++ : badR++;
         for (let j = i + 1; j < boxes.length; j++) {
           if (!overlaps(boxes[i], boxes[j], gap)) continue;
           if (j < nl) badL++; else if (i >= nl) badR++; else badX++;
         }
+        // keep inside the stage
+        if (boxes[i].x < 0 || boxes[i].x + boxes[i].w > W) i < nl ? badL++ : badR++;
       }
       return { cx, cy, b, boxes, badL, badR, badX, bad: badL + badR + badX, H: 2 * b + itemH + 12 };
     };
-    const b0 = Math.max(hs.h / 2 + itemH / 2 + 24, (el._ringH - itemH - 12) / 2);
     let best = null;
-    for (let b = b0; b <= b0 * 1.7 && !(best && !best.bad); b += 20) {
-      // start each side nearly round, then widen only the side that still has clashes
-      const start = (n) => (n ? Math.min(room / (L.length && R.length ? 2 : 1), Math.max(b * 0.85, itemW * 0.7)) : 0);
-      let aL = start(L.length), aR = start(R.length);
-      for (let guard = 0; guard < 120; guard++) {
-        const r = tryLayout(aL, aR, b);
-        if (!best || r.bad < best.bad) best = r;
-        if (!r.bad) break;
-        const free = room - aL - aR;
-        if (free < 1) break;
-        const gL = L.length && (r.badL || r.badX), gR = R.length && (r.badR || r.badX);
-        const step = Math.min(free, 16);
-        if (gL && gR) { const wl = L.length / (L.length + R.length); aL += step * wl; aR += step * (1 - wl); }
-        else if (gL) aL += step;
-        else if (gR) aR += step;
-        else break;
+    const keep = (r) => { if (!best || r.bad < best.bad) best = r; return !r.bad; };
+    if (mode === "full") {
+      const aMax = W / 2 - 24; // the inside-the-stage check keeps the outer words in
+      for (let a = Math.min(aMax, Math.max(b * 0.9, itemW * 0.8)); a <= aMax + 0.5; a += 14) {
+        const cx = W / 2, p = fullPoints(L.length, R.length, a, b, cx, cy);
+        if (keep(score(cx, p.left, p.right))) break;
       }
+      return best;
     }
-    // write (the first time without transitions, so the words start from their slide-in offset)
+    // the outermost word on each side is the one at 3 / 9 o'clock: reserve its width, not the widest word's
+    const mid = (arr) => (arr.length ? arr[Math.floor(arr.length / 2)].w : 0);
+    const extL = (L.length ? mid(ls) / 2 : hs.w / 2) + 6, extR = (R.length ? mid(rs) / 2 : hs.w / 2) + 6;
+    const room = W - extL - extR; // aL + aR may use this much
+    const start = (n) => (n ? Math.min(room / (L.length && R.length ? 2 : 1), Math.max(b * 0.85, itemW * 0.7)) : 0);
+    let aL = start(L.length), aR = start(R.length);
+    for (let guard = 0; guard < 120; guard++) {
+      const cx = (W - (aL + extL + aR + extR)) / 2 + aL + extL;
+      const r = score(cx, halfPoints(L.length, aL, b, cx, cy, -1), halfPoints(R.length, aR, b, cx, cy, 1));
+      if (keep(r)) break;
+      const free = room - aL - aR;
+      if (free < 1) break;
+      // widen only the side that still has clashes
+      const gL = L.length && (r.badL || r.badX), gR = R.length && (r.badR || r.badX), step = Math.min(free, 16);
+      if (gL && gR) { const wl = L.length / (L.length + R.length); aL += step * wl; aR += step * (1 - wl); }
+      else if (gL) aL += step;
+      else if (gR) aR += step;
+      else break;
+    }
+    return best;
+  }
+
+  function ringLayout(el) {
+    const W = el.clientWidth; if (!W) return;
+    const b0 = (m) => Math.max(m.hs.h / 2 + m.itemH / 2 + 24, (el._ringH - m.itemH - 12) / 2);
+    const run = (cfg) => {
+      el.classList.toggle("vg-compact", cfg.compact);
+      const m = ringMeasure(el); if (!m) return null;
+      return { m, best: ringTry(m, W, cfg.mode, b0(m) * cfg.grow) };
+    };
+    // Re-use the last choice while it still works (choosing again would resize the words and
+    // set off another layout); choose again when the width changes or it stops fitting.
+    let r = el._ring && Math.abs(el._ring.W - W) <= 40 ? run(el._ring) : null;
+    if (!r || r.best.bad) {
+      const tries = [];
+      for (const compact of [false, true]) for (const mode of ["half", "full"]) tries.push({ compact, mode, grow: 1 });
+      for (let g = 1.15; g <= 1.75; g += 0.15) tries.push({ compact: true, mode: "full", grow: g }, { compact: true, mode: "half", grow: g });
+      let pick = null;
+      for (const cfg of tries) {
+        const x = run(cfg); if (!x) return;
+        if (!pick || x.best.bad < pick.x.best.bad) pick = { cfg, x };
+        if (!x.best.bad) break;
+      }
+      if (pick.x !== r) { r = run(pick.cfg); }
+      el._ring = Object.assign({ W }, pick.cfg);
+    }
+    if (r) ringWrite(el, r.m, r.best);
+  }
+
+  function ringWrite(el, m, best) {
+    const { hubEl, hs } = m, leaves = [...m.L, ...m.R];
+    // the first time without transitions, so the words start from their slide-in offset
     const first = !el.classList.contains("is-laid");
     if (first) el.classList.add("vg-nofx");
     el.style.height = best.H + "px";
     hubEl.style.left = best.cx - hs.w / 2 + "px";
     hubEl.style.top = best.cy - hs.h / 2 + "px";
-    [...L, ...R].forEach((lf, i) => {
+    leaves.forEach((lf, i) => {
       const bx = best.boxes[i];
       lf.style.left = bx.x + "px";
       lf.style.top = bx.y + "px";

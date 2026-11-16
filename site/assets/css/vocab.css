@@ -64,6 +64,8 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vg-side.is-left .vg-leaf { --dir: -1; }
 .vg-fan.is-drawn .vg-leaf { opacity: 1; transform: none; }
 .vg-py { font-size: var(--py); color: var(--ink-3); line-height: 1.25; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+/* one syllable per character, with air between them */
+.vg-pyt, .vgp-spy, .vg-pop-py, .vgp-py, .vg-hub-py { word-spacing: 0.14em; }
 .vg-py b { color: var(--accent); font-weight: 600; }
 .vg-py .speak { width: 24px; height: 24px; margin: -4px 0; }
 .vg-py .speak svg { width: 14px; height: 14px; }
@@ -115,6 +117,11 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
   text-align: center; justify-items: center; transform: translate(var(--tx, 0), var(--ty, 0));
 }
 .vg-ring .vg-en { max-width: 13em; }
+/* a size down when the full-size ring can't fit beside the side panel */
+.vg-fan.vg-ring.vg-compact { --w: 24px; --py: 12px; --en: 12.5px; --hub: 58px; }
+.vg-ring.vg-compact .vg-en { max-width: 10.5em; }
+.vg-ring.vg-compact .vg-py .speak { width: 20px; height: 20px; margin: -3px 0; }
+.vg-ring.vg-compact .vg-py .speak svg { width: 12px; height: 12px; }
 .vg-ring:not(.is-laid) .vg-hub, .vg-ring:not(.is-laid) .vg-leaf { visibility: hidden; }
 .vg-nofx .vg-leaf, .vg-nofx .vg-arrow { transition: none !important; }
 .vg-ring.is-drawn .vg-leaf { transform: none; }
@@ -261,7 +268,9 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vgp-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* The graph gets the full width; the side panels sit beside it only on wide screens. */
+/* About and Connected sit to the right of the graph on laptop screens and up, under it on smaller ones */
 .vgp-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; padding-bottom: 40px; }
+@media (min-width: 1160px) { .vgp-body { grid-template-columns: minmax(0, 1fr) minmax(250px, 290px); gap: 16px; } }
 /* a new graph fades in instead of sliding the whole page */
 .page-vgraph .vgp-titlebar, .page-vgraph .vgp-side { animation: vgp-in 0.32s ease-out both; }
 @keyframes vgp-in { from { opacity: 0.25; } }
@@ -295,6 +304,10 @@ a.vg-hub-ch:hover { background: var(--accent-soft); transform: scale(1.06); }
 .vgp-shint .han { color: var(--accent); font-size: 17px; }
 
 .vgp-side { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; align-content: start; }
+@media (min-width: 1160px) {
+  /* one column beside the graph, kept inside the screen (it scrolls on its own if a family has many links) */
+  .vgp-side { grid-template-columns: minmax(0, 1fr); max-height: calc(100vh - var(--topbar-h) - 150px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 2px; margin: -2px; border-radius: var(--radius); }
+}
 .vgp-ph-py { font: 600 14px/1 var(--font-ui); color: var(--accent); letter-spacing: 0; text-transform: none; }
 .vg-box-py { font-size: 13px; font-weight: 600; color: var(--accent); align-self: center; }
 .vgp-alt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 14px; color: var(--ink-2); padding: 9px 12px; border-radius: 12px; background: var(--indigo-soft); }
