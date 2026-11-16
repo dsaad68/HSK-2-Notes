@@ -14,7 +14,7 @@
     const out = [];
     if (h.readings) {
       const parts = h.readings.map((r) => r.py === "r"
-        ? `as a light <b>-r</b> added to the syllable before it in ${hanList(r.w.slice(0, 4))}${r.w.length > 4 ? " …" : ""}`
+        ? `as a light <b>-r</b> added to the syllable before it in ${hanList(r.w.slice(0, 4))}${r.w.length > 4 ? ` and ${r.w.length - 4} more` : ""}`
         : `<b>${r.py}</b> in ${hanList(r.w)}`);
       out.push(`<b>Two readings.</b> ${parts.join("; ")}.`);
     }
@@ -31,10 +31,6 @@
         : `<b>Light tone</b> (<b>${syl}</b>) in ${hanList(h.light)}.`);
     }
     return out;
-  }
-
-  function hubBox(h, cls) {
-    return `<div class="vg-box ${cls || ""}"><span class="vg-box-pos">${VB().posLine(h.pos)}</span><span class="vg-box-en">${h.en}</span></div>`;
   }
 
   /* ======================================================================
@@ -104,11 +100,16 @@
       const cards = new Map();
       HUBS.forEach((h) => {
         const c = html(`<article class="card vg-card${VB().seen(h.h) ? " is-seen" : ""}" data-hub="${h.h}">
+          <a class="vg-box vg-box-link" href="${VB().href(h.h)}" aria-label="Open the graph of ${h.h}: ${h.en}"><span class="han vg-box-h">${h.h}</span><span class="vg-box-pos">${VB().posLine(h.pos)}</span><span class="vg-box-en">${h.en}</span>${App.icon.arrow}</a>
           <div class="vg-card-top"><span class="vg-card-n">${plural(h.leaves.length, "word")}</span>${h.fresh ? `<span class="vg-card-new">${h.fresh} new</span>` : ""}<span class="vg-card-seen" title="You've opened this graph">${App.icon.check}</span></div>
           <div class="vg-fan-wrap"></div>
-          <a class="vg-box vg-box-link" href="${VB().href(h.h)}" aria-label="Open the graph of ${h.h}: ${h.en}"><span class="vg-box-pos">${VB().posLine(h.pos)}</span><span class="vg-box-en">${h.en}</span>${App.icon.arrow}</a>
         </article>`);
         $(".vg-fan-wrap", c).appendChild(VB().fan(h, { size: "sm" }));
+        // the whole card opens the graph; links inside it (blue characters) keep their own target
+        c.addEventListener("click", (ev) => {
+          if (ev.target.closest("a, button") || (window.getSelection && String(window.getSelection()).length)) return;
+          App.go(VB().href(h.h));
+        });
         c._idx = this.index(h);
         cards.set(h.h, c);
       });
@@ -202,31 +203,47 @@
         : !h.right.length ? `Never starts a word here: it comes later in all ${plural(h.left.length, "word")} (they branch left).`
         : `Starts ${plural(h.right.length, "word")} (right) and comes later in ${plural(h.left.length, "word")} (left).`;
 
+      const navBtn = (x, dir) => `<a class="vgp-nav-btn${dir > 0 ? " is-next" : ""}" href="${VB().href(x.h)}" title="${dir > 0 ? "Next" : "Previous"} graph: ${x.h} ${x.en}">
+        ${dir < 0 ? App.icon.prev : ""}<b class="han">${x.h}</b><small>${x.en}</small>${dir > 0 ? App.icon.next : ""}</a>`;
+
       const root = html(`<div class="page-vgraph">
-        <section class="wrap page-head vgp-head">
-          <div class="vgp-crumbs">
+        <section class="wrap vgp-head">
+          <div class="vgp-bar">
             <a class="back" href="#/vocab">${App.icon.back} All graphs</a>
-            <span class="muted vgp-of">Graph ${h.i + 1} of ${HUBS.length}</span>
+            <nav class="vgp-nav" aria-label="Graphs">
+              ${navBtn(prev, -1)}
+              <span class="vgp-of muted">${h.i + 1} / ${HUBS.length}</span>
+              ${navBtn(next, 1)}
+            </nav>
           </div>
-          <span class="eyebrow">Vocabulary graph · ${plural(h.leaves.length, "word")}</span>
-          <h1 class="title-lg vgp-title"><span class="han vgp-h">${h.h}</span><span class="vgp-py py">${VB().hubPy(h)}</span>${App.speakBtn(h.h, VB().hubPy(h))}<span class="vgp-en">${h.en}</span></h1>
-          <p class="lede">${h.note}</p>
+          <div class="vgp-titlebar">
+            <h1 class="vgp-title"><span class="han vgp-h">${h.h}</span><span class="vgp-py py">${VB().hubPy(h)}</span>${App.speakBtn(h.h, VB().hubPy(h))}<span class="vgp-mean"><i class="vgp-pos">${VB().posLine(h.pos)}</i>${h.en}</span></h1>
+            <div class="vgp-chips"><span class="chip">${plural(h.leaves.length, "word")}</span>${h.fresh ? `<span class="chip chip-gold">${h.fresh} new in HSK 2</span>` : ""}</div>
+          </div>
         </section>
 
         <section class="wrap vgp-body">
           <div class="card vgp-stage">
             <div class="vgp-tools">
-              <span class="chip">${plural(h.leaves.length, "word")}</span>
-              ${h.fresh ? `<span class="chip chip-gold">${h.fresh} new in HSK 2</span>` : ""}
+              <div class="seg vgp-mode" role="group" aria-label="How to show the words">
+                <button data-v="all" aria-pressed="${!this.stepMode()}">All words</button>
+                <button data-v="step" aria-pressed="${this.stepMode()}">One by one</button>
+              </div>
+              <span class="vgp-keys muted"><kbd>←</kbd><kbd>→</kbd> <span class="vgp-keys-l"></span></span>
               <button class="btn btn-sm btn-ghost vgp-replay" title="Draw it again (R)">${App.icon.replay}<span>Replay</span></button>
             </div>
             <div class="vgp-fan"></div>
-            ${hubBox(h, "vgp-box")}
+            <div class="vgp-stepbar" hidden>
+              <button class="ctrl vgp-sprev" aria-label="Previous word">${App.icon.prev}</button>
+              <div class="vgp-scur" aria-live="polite"></div>
+              <button class="ctrl is-primary vgp-snext" aria-label="Next word">${App.icon.next}</button>
+            </div>
           </div>
 
           <aside class="vgp-side">
             <div class="card vgp-panel">
               <h3 class="vgp-ph">About <span class="han">${h.h}</span></h3>
+              <p class="vgp-note">${h.note}</p>
               <ul class="vgp-facts">
                 <li>${own}</li>
                 <li>${pos}</li>
@@ -235,36 +252,61 @@
             </div>
             ${nb.length ? `<div class="card vgp-panel">
               <h3 class="vgp-ph">Connected graphs <small class="muted">${nb.length}</small></h3>
-              <p class="vgp-sub muted">The other characters in these words have graphs too.</p>
-              <div class="vgp-nbs">${nb.map((n) => `<a class="vgp-nb" href="${VB().href(n.hub.h)}" title="${n.hub.en}"><b class="han">${n.hub.h}</b><small class="han">${n.via.join(" · ")}</small></a>`).join("")}</div>
+              <div class="vgp-nbs">${nb.map((n) => `<a class="vgp-nb" href="${VB().href(n.hub.h)}" title="${n.hub.h}: ${n.hub.en}"><b class="han">${n.hub.h}</b><small class="han">${n.via.slice(0, 2).join(" · ")}${n.via.length > 2 ? ` +${n.via.length - 2}` : ""}</small></a>`).join("")}</div>
             </div>` : ""}
-            <a class="card vgp-panel vgp-quiz" href="#/vocab/quiz"><span>${App.icon.target}</span><div><b>Quiz yourself</b><small>Find the shared character in ten graphs.</small></div>${App.icon.arrow}</a>
           </aside>
         </section>
-
-        <nav class="wrap x-pager">
-          <a class="x-pg" href="${VB().href(prev.h)}">${App.icon.prev}<span><small>Graph ${prev.i + 1} · ${prev.en}</small><b class="han">${prev.h}</b></span></a>
-          <span class="xs-keys muted vgp-keys"><kbd>←</kbd><kbd>→</kbd> graphs · <kbd>R</kbd> replay</span>
-          <a class="x-pg is-next" href="${VB().href(next.h)}"><span><small>Graph ${next.i + 1} · ${next.en}</small><b class="han">${next.h}</b></span>${App.icon.next}</a>
-        </nav>
       </div>`);
 
+      // Size: big families switch to compact rows so the graph fits on one screen.
       const small = window.matchMedia("(max-width: 640px)").matches;
-      // a tall side reads better a size down
-      const tall = Math.max(h.left.length, h.right.length) > 5;
-      const f = VB().fan(h, { size: small || tall ? "md" : "lg", ink: true, speak: true });
+      const most = Math.max(h.left.length, h.right.length);
+      const f = VB().fan(h, { size: small || most > 4 ? "md" : "lg", rows: !small && most > 6, ink: true, speak: true });
       $(".vgp-fan", root).appendChild(f);
       this.f = f;
-      $(".vgp-replay", root).addEventListener("click", () => { App.sfx.tick(); VB().play(f); });
+
+      /* ---- one-by-one mode ---- */
+      // words that start with the hub first, then the ones where it comes later; top to bottom
+      const leafEls = $$(".vg-leaf", f);
+      const order = [...h.right, ...h.left].map((w) => leafEls.findIndex((lf) => lf.dataset.w === w));
+      const total = order.length;
+      const bar = $(".vgp-stepbar", root), cur = $(".vgp-scur", root), keysL = $(".vgp-keys-l", root);
+      let n = 0;
+      const show = () => {
+        const on = this.stepMode();
+        bar.hidden = !on;
+        keysL.textContent = on ? "words" : "graphs";
+        if (!on) { VB().step(f, order, null); return; }
+        const lf = VB().step(f, order, n);
+        if (!lf) cur.innerHTML = `<span class="vgp-shint">Press <kbd>→</kbd> to show the first of ${plural(total, "word")}.</span>`;
+        else {
+          const e = WORDS.get(lf.dataset.w);
+          cur.innerHTML = `<span class="vgp-sn">${n} / ${total}</span><span class="han vgp-sw">${e.w}</span><span class="py vgp-spy">${VB().pyText(e.py)}</span>${App.speakBtn(e.w, VB().pyText(e.py))}<span class="vgp-sen">${e.en}</span>` +
+            (n === total ? `<span class="vgp-shint">All shown · <kbd>→</kbd> next graph <span class="han">${next.h}</span></span>` : "");
+        }
+      };
+      const fwd = () => { if (n < total) { n++; App.sfx.tick(); show(); } else App.go(VB().href(next.h)); };
+      const back = () => { if (n > 0) { n--; show(); } else App.go(VB().href(prev.h)); };
+      $(".vgp-snext", root).addEventListener("click", fwd);
+      $(".vgp-sprev", root).addEventListener("click", back);
+      App.seg($(".vgp-mode", root), (v) => { App.store.setting("vgStep", v === "step"); n = 0; f.classList.add("is-drawn"); show(); });
+      this.show = show;
+
+      $(".vgp-replay", root).addEventListener("click", () => { App.sfx.tick(); n = 0; show(); VB().play(f); });
       App.onKey((ev) => {
-        if (ev.key === "ArrowLeft") { App.go(VB().href(prev.h)); return true; }
-        if (ev.key === "ArrowRight") { App.go(VB().href(next.h)); return true; }
-        if (ev.key === "r" || ev.key === "R") { VB().play(f); return true; }
+        const on = this.stepMode();
+        if (ev.key === "ArrowRight") { if (on) fwd(); else App.go(VB().href(next.h)); return true; }
+        if (ev.key === "ArrowLeft") { if (on) back(); else App.go(VB().href(prev.h)); return true; }
+        if (ev.key === "r" || ev.key === "R") { n = 0; show(); VB().play(f); return true; }
+        if (ev.key === "s" || ev.key === "S") { $(`.vgp-mode button[data-v="${on ? "all" : "step"}"]`, root).click(); return true; }
+        if (ev.key === "Enter" && on && n) { const b = $(".vgp-scur .speak", root); if (b) b.click(); return true; }
         return false;
       });
+      show();
       this.root = root;
       return root;
     },
+    stepMode() { return !!App.store.setting("vgStep"); },
     mounted() {
       if (this.h && this.f) VB().play(this.f);
     }

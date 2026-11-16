@@ -217,8 +217,7 @@
           <div class="xl-head-row">
             <div>
               <span class="eyebrow">Expressions · Lesson ${L.n}</span>
-              <h1 class="title-lg xl-title">${L.items.map((e) => `<span class="han">${e.w}</span>`).join('<span class="xl-sep">·</span>')}<span class="zh-sub">${L.zh}</span></h1>
-              <p class="lede">Three new expressions, one at a time. Each is built from two words you already know. Follow the steps, then check yourself.</p>
+              <h1 class="title-lg xl-title" title="Three new expressions, one at a time, each built from two words you already know">${L.items.map((e) => `<span class="han">${e.w}</span>`).join('<span class="xl-sep">·</span>')}<span class="zh-sub">${L.zh}</span></h1>
             </div>
             ${pills(L.n)}
           </div>
@@ -289,22 +288,23 @@
       const L = this.L, e = L.items[k], n = L.items.length;
       const nextLabel = k < n - 1 ? `Next: <span class="han">${L.items[k + 1].w}</span>` : "Check yourself";
       const el = html(`<div class="xs-slide">
-        <header class="xs-head">
-          <div class="xs-title"><span class="xs-count">Expression ${k + 1} of ${n}</span>${X().patTag(e.pat)}</div>
-          <div class="x-card-actions">
-            <button class="btn btn-sm btn-ghost x-write" title="Write it stroke by stroke">${X().ICON.write}<span>Write</span></button>
-            <button class="btn btn-sm btn-ghost x-replay" title="Play the steps again">${App.icon.replay}<span>Replay</span></button>
-          </div>
-        </header>
         <div class="xs-body">
-          <div class="xs-build"></div>
+          <div class="xs-build">
+            <header class="xs-head">
+              <div class="xs-title"><span class="xs-count">Expression ${k + 1} of ${n}</span>${X().patTag(e.pat)}</div>
+              <div class="x-card-actions">
+                <button class="btn btn-sm btn-ghost x-write" title="Write it stroke by stroke">${X().ICON.write}<span>Write</span></button>
+                <button class="btn btn-sm btn-ghost x-replay" title="Play the steps again">${App.icon.replay}<span>Replay</span></button>
+              </div>
+            </header>
+          </div>
           <ol class="xs-steps">${stepsHTML(e)}</ol>
+          <footer class="xs-foot">
+            ${k > 0 ? `<button class="btn btn-ghost xs-prev">${App.icon.prev} <span class="han">${L.items[k - 1].w}</span></button>` : `<span></span>`}
+            <span class="xs-keys muted"><kbd>←</kbd><kbd>→</kbd> words</span>
+            <button class="btn btn-primary xs-next">${nextLabel} ${App.icon.arrow}</button>
+          </footer>
         </div>
-        <footer class="xs-foot">
-          ${k > 0 ? `<button class="btn btn-ghost xs-prev">${App.icon.prev} <span class="han">${L.items[k - 1].w}</span></button>` : `<span></span>`}
-          <span class="xs-keys muted"><kbd>←</kbd><kbd>→</kbd> move between words</span>
-          <button class="btn btn-primary xs-next">${nextLabel} ${App.icon.arrow}</button>
-        </footer>
       </div>`);
       const small = window.matchMedia("(max-width: 640px)").matches;
       const b = X().builder(e, small ? { cell: 42, rcell: 62 } : { cell: 56, rcell: 84 });

@@ -87,6 +87,7 @@
    * @param {object} h   hub
    * @param {object} o
    *   size     'sm' | 'md' | 'lg'
+   *   rows     compact rows: pinyin and meaning beside the word (for big families)
    *   links    link the hub and partner characters to their graphs (default true)
    *   ink      draw the hub with the brush (needs stroke data) instead of text
    *   speak    add a listen button to each word
@@ -121,7 +122,7 @@
       : o.ink
         ? `<span class="vg-hub-ch vg-hub-ink" data-chars="${h.h}">${Array.from(h.h).map(() => `<span class="vg-ink-cell"></span>`).join("")}</span>`
         : o.links ? `<a class="vg-hub-ch han" href="${href(h.h)}" title="Open the graph of ${h.h}">${h.h}</a>` : `<span class="vg-hub-ch han">${h.h}</span>`;
-    const el = html(`<div class="vg-fan vg-${o.size}${left.length ? "" : " no-left"}${right.length ? "" : " no-right"}" data-hub="${h.h}">
+    const el = html(`<div class="vg-fan vg-${o.size}${o.rows ? " vg-rows" : ""}${left.length ? "" : " no-left"}${right.length ? "" : " no-right"}" data-hub="${h.h}">
       <svg class="vg-arrows" aria-hidden="true"></svg>
       ${left.length ? `<div class="vg-side is-left">${L}</div>` : ""}
       <div class="vg-hub"><span class="py vg-hub-py">${o.mask ? "?" : hubPy(h)}</span>${hubInner}</div>
@@ -136,6 +137,23 @@
     return el;
   }
   function hot(el, i) { $$(".vg-arrow", el).forEach((p, k) => p.classList.toggle("is-hot", k === i)); }
+
+  /**
+   * Step-by-step mode: show the first n words of `order` (indices into the
+   * fan's words, in the order they should appear); the last one is current.
+   * n = null leaves step mode.
+   */
+  function step(el, order, n) {
+    const leaves = $$(".vg-leaf", el), arrows = $$(".vg-arrow", el);
+    el.classList.toggle("is-step", n != null);
+    const shown = new Set(n == null ? [] : order.slice(0, n)), cur = n ? order[n - 1] : -1;
+    leaves.forEach((lf, k) => {
+      lf.classList.toggle("is-shown", shown.has(k));
+      lf.classList.toggle("is-current", k === cur);
+      if (arrows[k]) { arrows[k].classList.toggle("is-shown", shown.has(k)); arrows[k].classList.toggle("is-cur", k === cur); }
+    });
+    return cur >= 0 ? leaves[cur] : null;
+  }
 
   /** Ink the hub (fan built with ink:true). Resolves when drawn. */
   async function inkHub(el, opts) {
@@ -177,11 +195,13 @@
     svg.setAttribute("viewBox", `0 0 ${g.W} ${g.H}`);
     svg.setAttribute("width", g.W); svg.setAttribute("height", g.H);
     const was = $$(".vg-arrow", svg).map((p) => p.classList.contains("is-hot"));
+    const leaves = $$(".vg-leaf", el);
     svg.innerHTML = g.lines.map((l, k) => {
       const a = Math.atan2(l.ey - l.sy, l.ex - l.sx), s = g.head, sp = 0.45;
       const h1 = [l.ex - s * Math.cos(a - sp), l.ey - s * Math.sin(a - sp)], h2 = [l.ex - s * Math.cos(a + sp), l.ey - s * Math.sin(a + sp)];
       const f = (n) => n.toFixed(1);
-      return `<path class="vg-arrow${was[k] ? " is-hot" : ""}" pathLength="1" style="--k:${k}" d="M${f(l.sx)} ${f(l.sy)}L${f(l.ex)} ${f(l.ey)}M${f(h1[0])} ${f(h1[1])}L${f(l.ex)} ${f(l.ey)}L${f(h2[0])} ${f(h2[1])}"/>`;
+      const lf = leaves[k], st = lf ? (lf.classList.contains("is-shown") ? " is-shown" : "") + (lf.classList.contains("is-current") ? " is-cur" : "") : "";
+      return `<path class="vg-arrow${was[k] ? " is-hot" : ""}${st}" pathLength="1" style="--k:${k}" d="M${f(l.sx)} ${f(l.sy)}L${f(l.ex)} ${f(l.ey)}M${f(h1[0])} ${f(h1[1])}L${f(l.ex)} ${f(l.ey)}L${f(h2[0])} ${f(h2[1])}"/>`;
     }).join("");
   }
   let ro = null;
@@ -262,5 +282,5 @@
   };
   const stats = () => ({ hubs: HUBS.length, seen: HUBS.filter((h) => seen(h.h)).length, quiz: st().quiz || null });
 
-  App.vocab = { V, WORDS, HUBS, HUB, LINKED, POS, posLine, pyHTML, pyText, hubPy, plain, runs, neighbours, href, NEW_TAG, fan, play, inkHub, redraw, showcase, seen, markSeen, recordQuiz, stats, shuffle };
+  App.vocab = { V, WORDS, HUBS, HUB, LINKED, POS, posLine, pyHTML, pyText, hubPy, plain, runs, neighbours, href, NEW_TAG, fan, step, play, inkHub, redraw, showcase, seen, markSeen, recordQuiz, stats, shuffle };
 })();
