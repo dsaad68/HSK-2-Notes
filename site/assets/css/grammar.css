@@ -31,7 +31,7 @@
 .g-sent.is-sm .g-chip .han { font-size: 18px; }
 .g-sent.is-sm .g-chip .py { font-size: 10.5px; }
 .g-sent.is-sm .g-punct { font-size: 18px; margin-bottom: 4px; }
-.g-sent.is-lg { gap: 10px 8px; }
+.g-sent.is-lg { gap: 12px 12px; }
 .g-sent.is-lg .g-chip { padding: 7px 12px 6px; border-radius: 14px; }
 .g-sent.is-lg .g-chip .han { font-size: 27px; }
 .g-sent.is-lg .g-chip .py { font-size: 12.5px; }
@@ -39,7 +39,8 @@
 
 /* chips that fold away to nothing and open up again */
 .g-fold { max-width: 0; padding-left: 0; padding-right: 0; margin-left: -6px; opacity: 0; overflow: hidden; box-shadow: none !important; }
-.g-sent.is-lg .g-fold { margin-left: -8px; padding-left: 0; padding-right: 0; }
+.g-sent.is-lg .g-fold { margin-left: -12px; padding-left: 0; padding-right: 0; }
+.g-sent.is-lg .g-fold.is-in { margin-left: 0; }
 .g-fold.is-in { max-width: 240px; margin-left: 0; padding-left: 11px; padding-right: 11px; opacity: 1; overflow: visible; box-shadow: inset 0 0 0 1.5px var(--line-2) !important; }
 .g-sent.is-lg .g-fold.is-in { padding-left: 12px; padding-right: 12px; }
 .g-fold.is-in[data-r="m"] { box-shadow: inset 0 0 0 1.5px var(--accent) !important; }
@@ -54,6 +55,9 @@
   font-size: 13px; font-weight: 600; color: var(--ink-2); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-2);
 }
 .g-fx .han { font-size: 18px; font-weight: 400; }
+.g-fx-zh { display: inline-grid; justify-items: center; line-height: 1.15; padding: 2px 0; }
+.g-build .btn-primary svg { width: 13px; height: 13px; }
+.g-fx-zh .py { font-size: 11px; font-weight: 500; opacity: 0.85; }
 .g-fx[data-r="m"] { color: var(--accent-ink); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
 .g-fx[data-r="f"], .g-fx[data-r="w"] { color: var(--gold); background: var(--gold-soft); box-shadow: inset 0 0 0 1px var(--gold); }
 .g-fx[data-r="p"], .g-fx[data-r="n"] { color: var(--jade); background: var(--jade-soft); box-shadow: inset 0 0 0 1px var(--jade); }
@@ -102,17 +106,34 @@
 
 /* ---------------- lesson slide ---------------- */
 .g-slide-head { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px dashed var(--line-2); }
-.g-slide-head .title-md .han { font-size: 1.1em; font-weight: 400; }
+.g-slide-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; }
 .g-slide-en { font-family: var(--font-display); }
+.g-slide-zh { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; padding-left: 22px; border-left: 1.5px solid var(--line-2); }
+.g-slide-zh .han { font-size: 20px; color: var(--ink-2); }
+.g-slide-zh .py { font-size: 13.5px; color: var(--ink-3); }
 .g-slide .xs-body { grid-template-areas: "build steps"; grid-template-rows: auto; }
 .g-build { min-height: 400px; padding: 56px 16px 20px; }
 .g-build-hint { font-size: 12.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
-.g-detail { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 18px 30px; margin-top: 22px; padding-top: 20px; border-top: 1px dashed var(--line-2); }
+.g-part { margin-top: 22px; }
+.g-part-h { margin-top: 26px; margin-bottom: 0; }
+.g-slide .xs-body { margin-top: 12px; }
+.g-h-n { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; font: 600 12px/1 var(--font-display); letter-spacing: 0; color: #fff8f0; background: var(--accent); }
+.g-pattern-box { display: grid; gap: 14px; padding: 20px 22px; border-radius: 18px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+.g-pattern .g-formulas { gap: 12px 26px; }
+.g-pattern .g-fx { min-height: 48px; padding: 4px 15px; font-size: 15px; border-radius: 11px; }
+.g-pattern .g-fx-zh .py { font-size: 12.5px; }
+.g-pattern .g-fx .han { font-size: 24px; }
+.g-pattern .g-fx-plus { font-size: 18px; }
+.g-rule-text { font-size: 17px; line-height: 2; color: var(--ink); max-width: 820px; }
+.g-pattern-box ruby { ruby-position: over; }
+.g-pattern-box rt { font: 500 0.62em/1 var(--font-ui); color: var(--accent); letter-spacing: 0; }
+.g-pattern .x-note { line-height: 2; }
+.g-rule-text .han { font-size: 1.12em; }
+.g-pattern .x-note { max-width: 820px; font-size: 14.5px; }
+.g-exs { padding-top: 20px; border-top: 1px dashed var(--line-2); }
 .g-h { font-size: 12.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .g-h .muted { text-transform: none; letter-spacing: 0; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
 .g-h svg { width: 14px; height: 14px; }
-.g-rule p { font-size: 15.5px; line-height: 1.6; color: var(--ink-2); margin-bottom: 12px; }
-.g-rule .han { font-size: 1.12em; }
 .g-ex-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .g-ex { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; }
 .g-ex-n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 600 12.5px/1 var(--font-display); color: var(--ink-3); background: var(--surface-3); margin-top: 8px; }
@@ -136,7 +157,7 @@
 .arc { fill: none; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.9s var(--ease-out); }
 
 /* 吧 — certainty meter */
-.gv-end { max-width: 0; padding-left: 0; padding-right: 0; margin-left: -8px; opacity: 0; overflow: hidden; }
+.gv-end { max-width: 0; padding-left: 0; padding-right: 0; margin-left: -12px; opacity: 0; overflow: hidden; }
 .gv-end.is-in { max-width: 120px; margin-left: 0; padding-left: 12px; padding-right: 12px; opacity: 1; }
 .gv-meter { width: min(100%, 380px); --x: 1; }
 .gv-track { position: relative; height: 10px; margin: 34px 12px 0; border-radius: 999px; background: linear-gradient(90deg, var(--line), var(--line-2)); }
@@ -300,7 +321,15 @@
 }
 @media (max-width: 900px) {
   .g-slide .xs-body { grid-template-columns: minmax(0, 1fr); grid-template-areas: "build" "steps"; }
-  .g-detail { grid-template-columns: minmax(0, 1fr); }
+  .g-pattern-box { padding: 16px; }
+  .g-slide-zh { padding-left: 0; border-left: 0; }
+  .g-rule-text, .g-pattern .x-note { line-height: 1.85; }
+  .g-pattern .g-formulas { gap: 10px; }
+  .g-pattern .g-formula { gap: 5px; }
+  .g-pattern .g-fx { min-height: 34px; padding: 3px 10px; font-size: 13px; }
+  .g-pattern .g-fx .han { font-size: 19px; }
+  .g-pattern .g-fx-plus { font-size: 14px; }
+  .g-rule-text { font-size: 16px; }
 }
 @media (max-width: 640px) {
   .g-points { grid-template-columns: minmax(0, 1fr); }

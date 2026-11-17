@@ -159,7 +159,7 @@
 
     mounted() {
       const s = this.slide;
-      if (this.L && s && s.v) { s.v.layout && s.v.layout(); s.v.play(s.playOpts); }
+      if (this.L && s && s.v && s.v.layout) s.v.layout();
     },
 
     show(k) {
@@ -183,7 +183,7 @@
         stage.replaceChildren(slide.el);
         if (!live) return;
         slide.el.animate([{ opacity: 0, transform: `translateX(${dir * 26}px)` }, { opacity: 1, transform: "none" }], { duration: 420, easing: "cubic-bezier(.16,1,.3,1)" });
-        if (slide.v) { slide.v.layout && slide.v.layout(); App.later(() => slide.v.play(slide.playOpts), 300); }
+        if (slide.v && slide.v.layout) slide.v.layout();
         const top = $(".xs-tabs", root).getBoundingClientRect().top;
         if (top < 70 || top > innerHeight * 0.6) $(".xs-tabs", root).scrollIntoView({ behavior: App.reduceMotion() ? "auto" : "smooth", block: "start" });
       };
@@ -198,34 +198,39 @@
       const el = html(`<div class="xs-slide g-slide">
         <header class="g-slide-head">
           <span class="xs-count">Pattern ${k + 1} of ${n}</span>
-          <h2 class="title-md"><span class="han">${p.zh}</span> <span class="g-slide-en">${p.en}</span></h2>
-          <div class="g-formulas">${p.formulas.map(Gm().formula).join("")}</div>
+          <div class="g-slide-title">
+            <h2 class="title-md g-slide-en">${p.en}</h2>
+            <span class="g-slide-zh"><span class="han">${p.zh}</span>${Gm().PY[p.zh] ? `<span class="py">${Gm().PY[p.zh]}</span>` : ""}</span>
+          </div>
         </header>
+        <section class="g-part g-pattern">
+          <h3 class="g-h"><span class="g-h-n">1</span>The pattern</h3>
+          <div class="g-pattern-box">
+            <div class="g-formulas">${p.formulas.map(Gm().formula).join("")}</div>
+            <p class="g-rule-text">${p.rule}</p>
+            <div class="x-note">${App.icon.bulb}<span>${p.note}</span></div>
+          </div>
+        </section>
+        <h3 class="g-h g-part-h"><span class="g-h-n">2</span>See it work <span class="muted">· the steps light up as it plays</span></h3>
         <div class="xs-body">
           <div class="xs-build g-build">
-            <header class="xs-head"><span class="g-build-hint muted">Watch it build</span>
-              <div class="x-card-actions"><button class="btn btn-sm btn-ghost g-replay" title="Play the steps again">${App.icon.replay}<span>Replay</span></button></div>
+            <header class="xs-head"><span></span>
+              <div class="x-card-actions"><button class="btn btn-sm btn-primary g-play" title="Play the steps">${App.icon.play}<span>Play</span></button></div>
             </header>
           </div>
           <ol class="xs-steps">${p.steps.map(([t, body], i) => `<li data-s="${i + 1}"><span class="xs-n">${i + 1}</span><div class="xs-text"><small>${t}</small><div>${body}</div></div></li>`).join("")}</ol>
         </div>
-        <div class="g-detail">
-          <div class="g-rule">
-            <h3 class="g-h">The rule</h3>
-            <p>${p.rule}</p>
-            <div class="x-note">${App.icon.bulb}<span>${p.note}</span></div>
-          </div>
-          <div class="g-exs">
-            <h3 class="g-h">From the textbook <span class="muted">· tap ${App.icon.speaker} to listen</span></h3>
-            <ol class="g-ex-list">${p.examples.map(Gm().example).join("")}</ol>
-          </div>
-        </div>
+        <section class="g-part g-exs">
+          <h3 class="g-h"><span class="g-h-n">3</span>From the textbook <span class="muted">· tap ${App.icon.speaker} to listen</span></h3>
+          <ol class="g-ex-list">${p.examples.map(Gm().example).join("")}</ol>
+        </section>
         <footer class="xs-foot">
           ${k > 0 ? `<button class="btn btn-ghost xs-prev">${App.icon.prev} <span class="han">${L.points[k - 1].short}</span></button>` : `<span></span>`}
           <span class="xs-keys muted"><kbd>←</kbd><kbd>→</kbd> patterns</span>
           <button class="btn btn-primary xs-next">${nextLabel} ${App.icon.arrow}</button>
         </footer>
       </div>`);
+      Gm().rubyfy($(".g-pattern-box", el));
       const v = Gm().visual(p);
       v.prime();
       $(".g-build", el).appendChild(v.el);
@@ -237,7 +242,13 @@
       });
       onStep(0);
       const playOpts = { onStep };
-      $(".g-replay", el).addEventListener("click", () => { App.sfx.tick(); v.play(playOpts); });
+      const playBtn = $(".g-play", el);
+      playBtn.addEventListener("click", () => {
+        App.sfx.tick();
+        playBtn.classList.replace("btn-primary", "btn-ghost");
+        playBtn.innerHTML = `${App.icon.replay}<span>Replay</span>`;
+        v.play(playOpts);
+      });
       $(".xs-next", el).addEventListener("click", () => { App.sfx.tick(); this.show(k + 1); });
       const pv = $(".xs-prev", el);
       if (pv) pv.addEventListener("click", () => { App.sfx.tick(); this.show(k - 1); });
