@@ -475,7 +475,25 @@
   const head = (q, label) => `<div class="qz-kind"><span class="qz-kind-i">${App.expr.ICON.spark}</span>${label}<span class="qz-from">${q.showLesson ? `Lesson ${q.p.L.n} · ` : ""}${q.p.short}</span></div>`;
   const BLANK = `<span class="qz-blank"><span class="qz-blank-in">？</span></span>`;
   const dialogue = (q) => q.ctx.length ? `<div class="g-dlg">${q.ctx.map(([who, s]) => `<div class="g-dlg-line"><span class="g-dlg-who">${who}</span><p class="han">${s.replace("＿＿", BLANK)}</p></div>`).join("")}</div>` : "";
-  const reveal = (el, q) => { const m = $(".g-qz-en", el); if (m) m.innerHTML = q.en.split(" · ").map((x) => `<span>${x}</span>`).join(""); el.classList.add("is-checked"); };
+  const enHTML = (q) => (q.en || "").split(" · ").map((x) => `<span>${x}</span>`).join("");
+  const reveal = (el) => el.classList.add("is-checked");
+
+  /* "Show meaning" / "Show pinyin" switches above a quiz. Remembered across visits. */
+  function quizTools(host) {
+    const bar = html(`<div class="g-qtools" role="group" aria-label="Quiz help">
+      <button class="meaning-toggle" type="button" data-k="showMeaning" title="Show the English of the dialogue"><span class="switch"></span>Show meaning</button>
+      <button class="meaning-toggle" type="button" data-k="showPinyin" title="Show pinyin above the Chinese"><span class="switch"></span>Show pinyin</button>
+    </div>`);
+    const sync = () => $$("button", bar).forEach((b) => {
+      const on = !!App.store.setting(b.dataset.k);
+      b.setAttribute("aria-pressed", on);
+      host.classList.toggle(b.dataset.k === "showMeaning" ? "g-show-en" : "g-show-py", on);
+    });
+    $$("button", bar).forEach((b) => b.addEventListener("click", () => { App.sfx.tick(); App.store.setting(b.dataset.k, !App.store.setting(b.dataset.k)); sync(); }));
+    sync();
+    host.before(bar);
+    return bar;
+  }
 
   /* Pick the words that fill the gap (or the one correct sentence). */
   function qPick(q, settle) {
@@ -485,7 +503,7 @@
       ${q.say ? `<p class="g-qz-say">${q.say}</p>` : ""}
       ${dialogue(q)}
       <div class="qz-opts g-opts${q.ctx.length ? "" : " is-sent"}${q.opts.some((o) => o.length > 4) ? " is-long" : ""}" role="group" aria-label="Answers"></div>
-      <p class="g-qz-en muted"></p>
+      <p class="g-qz-en muted">${enHTML(q)}</p>
     </div>`);
     const box = $(".qz-opts", el), blank = $(".qz-blank-in", el);
     const btns = opts.map((op, k) => {
@@ -506,7 +524,7 @@
         if (!ok) blank.parentElement.dataset.tried = opts[k].t;
         if (live(blank)) blank.animate([{ transform: "translateY(-10px) scale(1.2)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 420, easing: SPRING });
       }
-      reveal(el, q);
+      reveal(el);
       if (ok) App.burstAt(blank || btns[k], 0.5);
       settle(ok, q.why);
     }
@@ -524,7 +542,7 @@
       ${dialogue(q)}
       <div class="g-ord-line" aria-label="Your sentence"><span class="g-ord-ph">Tap the pieces in order</span></div>
       <div class="g-ord-pool" role="group" aria-label="Pieces"></div>
-      <p class="g-qz-en muted"></p>
+      <p class="g-qz-en muted">${enHTML(q)}</p>
     </div>`);
     const lineEl = $(".g-ord-line", el), poolEl = $(".g-ord-pool", el), ph = $(".g-ord-ph", el), blank = $(".qz-blank-in", el);
     const placed = [];
@@ -565,7 +583,7 @@
         const fix = html(`<div class="g-ord-fix"><span class="muted">Answer</span><div class="g-sent is-sm">${parts.map((p) => chip({ zh: p.zh, py: p.py, r: "" })).join("")}</div></div>`);
         lineEl.after(fix);
       }
-      reveal(el, q);
+      reveal(el);
       settle(ok, q.why);
     }
     sync();
@@ -620,5 +638,5 @@
     return { lessons: LESSONS.length, points: POINTS.length, tried, perfect };
   }
 
-  App.grammar = { G, LESSONS, POINTS, rubyfy, lesson, point, parse, chips, chip, formula, example, visual, questions, lessonQuestions, showcase, stats };
+  App.grammar = { G, LESSONS, POINTS, rubyfy, quizTools, lesson, point, parse, chips, chip, formula, example, visual, questions, lessonQuestions, showcase, stats };
 })();

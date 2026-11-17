@@ -57,7 +57,7 @@
 
   /* ---------------- store ---------------- */
   const KEY = "hsk2-radicals-v1";
-  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, expr: {}, grammar: {}, vocab: {}, settings: { theme: "light", sound: false, speed: 1, atlas: "lessons", examMode: "learn", showMeaning: false } });
+  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, expr: {}, grammar: {}, vocab: {}, settings: { theme: "light", sound: false, speed: 1, atlas: "lessons", examMode: "learn", showMeaning: false, showPinyin: false } });
   let state = blank();
   try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(blank(), JSON.parse(raw)); state.settings = Object.assign(blank().settings, state.settings); } catch (e) { /* storage unavailable */ }
   // Keep several open tabs in sync (otherwise one tab would overwrite another's progress).

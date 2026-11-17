@@ -313,6 +313,18 @@
 .g-opts.is-sent .qz-opt .han { font-size: 22px; }
 .g-qz-en { display: grid; gap: 2px; max-width: 600px; font-size: 14px; min-height: 0; }
 .g-qz:not(.is-checked) .g-qz-en { display: none; }
+.g-show-en .g-qz:not(.is-checked) .g-qz-en { display: grid; }
+
+/* quiz help switches */
+.g-qtools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: 860px; margin: 0 auto 10px; }
+.g-check .g-qtools { max-width: none; }
+/* pinyin: the pinyin font in the dialogue and answers; the pieces' own pinyin line */
+.g-show-py .g-dlg-line p, .g-show-py .g-opts .qz-opt .han { font-family: "WingPinyin", var(--font-han); }
+.g-show-py .g-dlg-line p { font-size: 34px; line-height: 1.45; }
+.g-show-py .g-opts .qz-opt .han { font-size: 32px; }
+@media (max-width: 640px) { .g-show-py .g-dlg-line p { font-size: 28px; } }
+.g-show-py .g-opts .qz-opt { padding-top: 10px; padding-bottom: 10px; }
+.x-quiz-host:not(.g-show-py) .g-piece .py, .x-quiz-host:not(.g-show-py) .g-ord-fix .py { display: none; }
 
 .g-ord-line {
   position: relative; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 8px 6px;

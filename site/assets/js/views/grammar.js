@@ -249,6 +249,7 @@
       onStep(0);
       const playOpts = { onStep };
       const nextP = k < n - 1;
+      Gm().quizTools($(".g-check .x-quiz-host", el));
       App.expr.quiz($(".g-check .x-quiz-host", el), Gm().questions(p, "practice"), {
         nextHref: `#/grammar/${L.n}/${k + 2}`,
         nextLabel: nextP ? `Next: ${L.points[k + 1].short}` : "Lesson quiz",
@@ -281,6 +282,7 @@
         <footer class="xs-foot"><button class="btn btn-ghost xs-prev">${App.icon.prev} <span class="han">${L.points[n - 1].short}</span></button><span></span><span></span></footer>
       </div>`);
       $(".xs-prev", el).addEventListener("click", () => { App.sfx.tick(); this.show(n - 1); });
+      Gm().quizTools($(".x-quiz-host", el));
       App.expr.quiz($(".x-quiz-host", el), qs, {
         nextHref: next ? `#/grammar/${next.n}` : "#/grammar/review",
         nextLabel: next ? `Lesson ${next.n}` : "Mixed review",
@@ -314,6 +316,7 @@
         <section class="wrap section" style="padding-top:28px"><div class="x-quiz-host"></div></section>
       </div>`);
       const host = $(".x-quiz-host", root);
+      Gm().quizTools(host);
       const round = () => {
         // every pattern at least once, then fill up to ten
         const per = shuffle(P).map((p) => shuffle(Gm().questions(p, true)));
