@@ -7,8 +7,8 @@
                            p = pivot or head noun, n = number, w = measure word
    Quiz items:  t: "pick"  → opts[0] is the answer (shown shuffled)
                 t: "order" → parts are the answer, in order (shown shuffled)
-   The first two quiz items of each point go into the lesson quiz;
-   all of them go into the mixed review.
+   The first five quiz items of each point are its own "Check yourself";
+   the first two also go into the lesson quiz; all go into the mixed review.
    ========================================================================== */
 (function () {
   "use strict";
@@ -41,7 +41,13 @@
                 why: "It's late, so A guesses: <span class=\"han\">老师回家了<b>吧</b></span>. 吧 always goes at the very end." },
               { t: "pick", ctx: [["A", "你＿＿？认识你很高兴。"], ["B", "是。认识你，我也很高兴。"]], opts: ["是小雪吧", "吧是小雪", "是吧小雪"],
                 en: "A: You must be Xiaoxue? Nice to meet you. · B: Yes. Nice to meet you too.",
-                why: "First the whole question, then <b class=\"han\">吧</b>: <span class=\"han\">你是小雪吧？</span>" }
+                why: "First the whole question, then <b class=\"han\">吧</b>: <span class=\"han\">你是小雪吧？</span>" },
+              { t: "pick", say: "Which one is a guess? (You think the answer is yes.)", ctx: [], opts: ["你是老师吧？", "你是老师吗？", "你是老师。"],
+                en: "You're a teacher, right?",
+                why: "<b class=\"han\">吧</b> at the end turns it into a guess. <span class=\"han\">吗</span> is a real question, and the last one is just a statement." },
+              { t: "order", ctx: [["A", "＿＿？"], ["B", "是啊，我很喜欢唱歌。"]], parts: ["你|nǐ", "很|hěn", "喜欢|xǐhuan", "唱歌|chàng gē", "吧|ba"],
+                en: "A: You love singing, don't you? · B: Yes, I really like singing.",
+                why: "A has noticed and guesses: <span class=\"han\">你很喜欢唱歌<b>吧</b></span>, with 吧 at the very end." }
             ]
           },
           {
@@ -72,7 +78,10 @@
                 why: "In the negative you can't drop <span class=\"han\">是</span>: always <b class=\"han\">不是……的</b>." },
               { t: "order", ctx: [["A", "你今天是几点到学校的？"], ["B", "＿＿。"]], parts: ["我|wǒ", "是|shì", "八点|bā diǎn", "到|dào", "的|de"],
                 en: "A: What time did you get to school today? · B: I got here at eight.",
-                why: "The detail is the time: <span class=\"han\">我<b>是</b>八点到<b>的</b></span>." }
+                why: "The detail is the time: <span class=\"han\">我<b>是</b>八点到<b>的</b></span>." },
+              { t: "pick", ctx: [["A", "你是什么时候来中国的？"], ["B", "我是去年＿＿。"]], opts: ["来的", "来了", "来吧"],
+                en: "A: When did you come to China? · B: I came last year.",
+                why: "A asks <i>when</i> with 是……的, so B answers the same way and closes with <b class=\"han\">的</b>: <span class=\"han\">我是去年来的</span>." }
             ]
           },
           {
@@ -100,7 +109,13 @@
                 why: "Inviting someone to do something: <b class=\"han\">请</b> + person + action." },
               { t: "pick", ctx: [["A", "家月，王老师让＿＿去找她。"], ["B", "好的，我现在就去找她。"]], opts: ["你", "她", "了"],
                 en: "A: Jiayue, Teacher Wang wants you to go and see her. · B: OK, I'll go and find her now.",
-                why: "<span class=\"han\">王老师</span> has <b class=\"han\">你</b> go: you're the pivot, the one who does the going." }
+                why: "<span class=\"han\">王老师</span> has <b class=\"han\">你</b> go: you're the pivot, the one who does the going." },
+              { t: "pick", ctx: [["A", "你今天怎么这么早回家？"], ["B", "老师＿＿我们早点儿回家。"]], opts: ["让", "是", "在"],
+                en: "A: Why are you home so early today? · B: The teacher let us go home early.",
+                why: "Letting someone do something: <b class=\"han\">让</b> + person + action. <span class=\"han\">我们</span> is the pivot." },
+              { t: "order", ctx: [["A", "周末你做什么？"], ["B", "＿＿。"]], parts: ["朋友|péngyou", "请|qǐng", "我|wǒ", "看|kàn", "电影|diànyǐng"],
+                en: "A: What are you doing at the weekend? · B: A friend has invited me to a film.",
+                why: "<span class=\"han\">朋友</span> invites <span class=\"han\">我</span>, and <span class=\"han\">我</span> watches the film: <span class=\"han\">朋友<b>请</b>我看电影</span>." }
             ]
           }
         ]
@@ -132,7 +147,13 @@
                 why: "Rain tomorrow makes today the better choice, and the choice goes between <b class=\"han\">还是</b> and <b class=\"han\">吧</b>." },
               { t: "pick", ctx: [["A", "不好意思，我今天太忙了，你＿＿。"], ["B", "好的，我们去找天中帮忙。"]], opts: ["还是找别人吧", "找别人还是吧", "还是吧找别人"],
                 en: "A: Sorry, I'm too busy today, you'd better ask someone else. · B: OK, we'll ask Tianzhong for help.",
-                why: "<b class=\"han\">还是</b> + the better option + <b class=\"han\">吧</b>: <span class=\"han\">还是找别人吧</span>." }
+                why: "<b class=\"han\">还是</b> + the better option + <b class=\"han\">吧</b>: <span class=\"han\">还是找别人吧</span>." },
+              { t: "pick", say: "Which one means “Let's just eat at home”?", ctx: [], opts: ["我们还是在家吃吧。", "我们在家吃还是吧。", "我们还是吧在家吃。"],
+                en: "Let's just eat at home.",
+                why: "The choice <span class=\"han\">在家吃</span> sits between <b class=\"han\">还是</b> and <b class=\"han\">吧</b>." },
+              { t: "order", ctx: [["A", "这件衣服太贵了。"], ["B", "那你＿＿。"]], parts: ["还是|háishi", "买|mǎi", "那件|nà jiàn", "吧|ba"],
+                en: "A: This one is too expensive. · B: Then you'd better buy that one.",
+                why: "Too expensive, so the other one is better: <span class=\"han\"><b>还是</b>买那件<b>吧</b></span>." }
             ]
           },
           {
@@ -162,7 +183,13 @@
                 why: "2 isn't a multiple of ten, so <b class=\"han\">多</b> goes after the measure word <span class=\"han\">岁</span>: <span class=\"han\">两岁<b>多</b></span>." },
               { t: "order", ctx: [["A", "家里还有苹果吗？"], ["B", "还有＿＿。"]], parts: ["十|shí", "多|duō", "个|ge"],
                 en: "A: Are there any apples left at home? · B: There are still ten or so.",
-                why: "10 is round: <span class=\"han\">十<b>多</b>个</span>." }
+                why: "10 is round: <span class=\"han\">十<b>多</b>个</span>." },
+              { t: "pick", ctx: [["A", "你们学校有多少老师？"], ["B", "有＿＿老师。"]], opts: ["三十多个", "三十个多", "多三十个"],
+                en: "A: How many teachers are there at your school? · B: Thirty-odd.",
+                why: "30 is a multiple of ten, so <b class=\"han\">多</b> goes right after it: <span class=\"han\">三十<b>多</b>个</span>." },
+              { t: "pick", ctx: [["A", "你学中文多长时间了？"], ["B", "＿＿了。"]], opts: ["一年多", "一多年", "多一年"],
+                en: "A: How long have you been learning Chinese? · B: A bit over a year.",
+                why: "1 isn't a multiple of ten, so <b class=\"han\">多</b> goes after <span class=\"han\">年</span>: <span class=\"han\">一年<b>多</b></span>." }
             ]
           },
           {
@@ -189,7 +216,13 @@
                 why: "Which apples? The ones someone bought: <span class=\"han\">谁<b>买</b>的苹果</span>. B answers <span class=\"han\">我买的</span>." },
               { t: "order", ctx: [["A", "我觉得＿＿很好看。"], ["B", "你穿也好看，想不想买一件？"]], parts: ["小雪|Xiǎoxuě", "穿|chuān", "的|de", "衣服|yīfu"],
                 en: "A: I think the clothes Xiaoxue is wearing look nice. · B: They'd look good on you too. Want to buy one?",
-                why: "<span class=\"han\">小雪穿</span> describes <span class=\"han\">衣服</span>, so it comes first, then <b class=\"han\">的</b>." }
+                why: "<span class=\"han\">小雪穿</span> describes <span class=\"han\">衣服</span>, so it comes first, then <b class=\"han\">的</b>." },
+              { t: "pick", ctx: [["A", "那个＿＿的人是谁？"], ["B", "是我们的新老师。"]], opts: ["在打电话", "打电话在", "电话在打"],
+                en: "A: Who's that person on the phone? · B: Our new teacher.",
+                why: "The action describes <span class=\"han\">人</span>, so the whole action goes before <b class=\"han\">的</b>: <span class=\"han\">在打电话的人</span>." },
+              { t: "order", ctx: [["A", "＿＿在哪儿？"], ["B", "在桌子上。"]], parts: ["昨天|zuótiān", "买|mǎi", "的|de", "书|shū"],
+                en: "A: Where's the book I bought yesterday? · B: On the table.",
+                why: "Which book? The one bought yesterday: <span class=\"han\">昨天买<b>的</b>书</span>, describer first." }
             ]
           }
         ]

@@ -131,7 +131,7 @@
         </section>
         <section class="wrap xs">
           <div class="xs-tabs" role="tablist" aria-label="Lesson steps">
-            ${L.points.map((p, k) => `<button class="xs-tab" role="tab" data-i="${k}"><span class="xs-tab-n">${k + 1}</span><span class="han">${p.short}</span></button><span class="xs-tab-line" aria-hidden="true"></span>`).join("")}
+            ${L.points.map((p, k) => `<button class="xs-tab${(best("p-" + p.id) || {}).best === 5 ? " is-mastered" : ""}" role="tab" data-i="${k}"><span class="xs-tab-n">${k + 1}</span><span class="han">${p.short}</span></button><span class="xs-tab-line" aria-hidden="true"></span>`).join("")}
             <button class="xs-tab" role="tab" data-i="${L.points.length}"><span class="xs-tab-n">${App.icon.check}</span>Quiz</button>
           </div>
           <div class="card xs-stage"></div>
@@ -192,6 +192,8 @@
       } else enter();
     },
 
+    pbest(p) { return best("p-" + p.id); },
+
     pointSlide(k) {
       const L = this.L, p = L.points[k], n = L.points.length;
       const nextLabel = k < n - 1 ? `Next: <span class="han">${L.points[k + 1].short}</span>` : "Check yourself";
@@ -200,7 +202,7 @@
           <span class="xs-count">Pattern ${k + 1} of ${n}</span>
           <div class="g-slide-title">
             <h2 class="title-md g-slide-en">${p.en}</h2>
-            <span class="g-slide-zh"><span class="han">${p.zh}</span>${Gm().PY[p.zh] ? `<span class="py">${Gm().PY[p.zh]}</span>` : ""}</span>
+            <span class="g-slide-zh"><span class="han py-font">${p.zh}</span></span>
           </div>
         </header>
         <section class="g-part g-pattern">
@@ -224,6 +226,10 @@
           <h3 class="g-h"><span class="g-h-n">3</span>From the textbook <span class="muted">· tap ${App.icon.speaker} to listen</span></h3>
           <ol class="g-ex-list">${p.examples.map(Gm().example).join("")}</ol>
         </section>
+        <section class="g-part g-check">
+          <h3 class="g-h"><span class="g-h-n">4</span>Check yourself <span class="muted">· five questions on <span class="han">${p.short}</span>${this.pbest(p) ? ` · best ${this.pbest(p).best}/5` : ""}</span></h3>
+          <div class="x-quiz-host"></div>
+        </section>
         <footer class="xs-foot">
           ${k > 0 ? `<button class="btn btn-ghost xs-prev">${App.icon.prev} <span class="han">${L.points[k - 1].short}</span></button>` : `<span></span>`}
           <span class="xs-keys muted"><kbd>←</kbd><kbd>→</kbd> patterns</span>
@@ -242,6 +248,14 @@
       });
       onStep(0);
       const playOpts = { onStep };
+      const nextP = k < n - 1;
+      App.expr.quiz($(".g-check .x-quiz-host", el), Gm().questions(p, "practice"), {
+        nextHref: `#/grammar/${L.n}/${k + 2}`,
+        nextLabel: nextP ? `Next: ${L.points[k + 1].short}` : "Lesson quiz",
+        perfectMsg: "Perfect! You've got this pattern.",
+        retryMsg: "Read the pattern and the examples again, then try once more.",
+        onDone: (score, total) => App.store.recordGrammar("p-" + p.id, score, total)
+      });
       const playBtn = $(".g-play", el);
       playBtn.addEventListener("click", () => {
         App.sfx.tick();

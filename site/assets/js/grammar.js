@@ -35,28 +35,15 @@
   }).join("");
   const T = (zh, py, r, cls) => chip({ zh, py, r }, cls);
 
-  /* Pinyin for the Chinese that appears in titles, formulas, rules and notes. */
-  const PY = {
-    "吧": "ba", "吧？": "ba", "吗": "ma", "是": "shì", "的": "de", "不": "bù", "多": "duō",
-    "是……的": "shì……de", "不是……的": "bú shì……de", "请 / 让 / 叫": "qǐng / ràng / jiào", "请": "qǐng", "让": "ràng", "叫": "jiào",
-    "还是": "háishi", "还是……吧": "háishi……ba", "学中文": "xué Zhōngwén", "朋友给我": "péngyou gěi wǒ",
-    "朋友给我的杯子": "péngyou gěi wǒ de bēizi", "你喝茶还是咖啡？": "Nǐ hē chá háishi kāfēi?", "二十多个": "èrshí duō ge", "五块多": "wǔ kuài duō",
-    "语气助词“吧”": "yǔqì zhùcí “ba”", "“是……的”句": "“shì……de” jù", "兼语句": "jiānyǔjù", "固定格式“还是……吧”": "gùdìng géshì “háishi……ba”",
-    "用“多”表达概数": "yòng “duō” biǎodá gàishù", "动词短语作定语": "dòngcí duǎnyǔ zuò dìngyǔ"
-  };
-  /* Put pinyin above every known Chinese snippet (.han) inside a block of text. */
+  /* Show pinyin above the Chinese in a block of text, using the pinyin font. */
   function rubyfy(root) {
-    $$(".han", root).forEach((h) => {
-      const py = PY[h.textContent.trim()];
-      if (!py || h.closest("ruby, .g-fx")) return;
-      h.innerHTML = `<ruby>${h.textContent}<rt>${py}</rt></ruby>`;
-    });
+    $$(".han", root).forEach((h) => h.classList.add("py-font"));
     return root;
   }
   const isZh = (t) => /[一-鿿]/.test(t) && !/[a-z]/i.test(t);
 
   function formula(f) {
-    return `<div class="g-formula">${f.cap ? `<span class="g-fx-cap">${f.cap}</span>` : ""}${f.parts.map(([t, r]) => `<span class="g-fx" data-r="${r}">${isZh(t) ? `<span class="g-fx-zh">${PY[t] ? `<span class="py">${PY[t]}</span>` : ""}<span class="han">${t}</span></span>` : t}</span>`).join('<span class="g-fx-plus">+</span>')}</div>`;
+    return `<div class="g-formula">${f.cap ? `<span class="g-fx-cap">${f.cap}</span>` : ""}${f.parts.map(([t, r]) => `<span class="g-fx" data-r="${r}">${isZh(t) ? `<span class="han py-font">${t}</span>` : t}</span>`).join('<span class="g-fx-plus">+</span>')}</div>`;
   }
 
 
@@ -593,9 +580,10 @@
     };
   }
 
-  /** A point's questions as quiz items (lesson quiz: first two per point). */
-  function questions(p, all) {
-    return (all ? p.quiz : p.quiz.slice(0, 2)).map((q) => Object.assign({}, q, { p, render: q.t === "order" ? qOrder : qPick }));
+  /** A point's questions as quiz items: "practice" = its five, true = all, default = the two for the lesson quiz. */
+  function questions(p, which) {
+    const list = which === "practice" ? p.quiz.slice(0, 5) : which ? p.quiz : p.quiz.slice(0, 2);
+    return list.map((q) => Object.assign({}, q, { p, render: q.t === "order" ? qOrder : qPick }));
   }
   const lessonQuestions = (L) => L.points.flatMap((p) => questions(p));
 
@@ -632,5 +620,5 @@
     return { lessons: LESSONS.length, points: POINTS.length, tried, perfect };
   }
 
-  App.grammar = { G, LESSONS, POINTS, PY, rubyfy, lesson, point, parse, chips, chip, formula, example, visual, questions, lessonQuestions, showcase, stats };
+  App.grammar = { G, LESSONS, POINTS, rubyfy, lesson, point, parse, chips, chip, formula, example, visual, questions, lessonQuestions, showcase, stats };
 })();

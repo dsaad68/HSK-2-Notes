@@ -106,6 +106,7 @@ Plain HTML, CSS and JavaScript with no build step.
 - `assets/js/data/origins.js` holds each radical's story, meaning, memory hook, example-relation ratings, and two hand-drawn SVGs: the real-world picture and a stylised ancient form. The ancient forms are only used in course lesson 2, and they're approximations inspired by oracle-bone and bronze scripts, not facsimiles. `assets/js/art.js` draws them line by line.
 - `assets/js/data/course.js` holds the course lessons. `assets/js/views/course.js` contains their visualisations.
 - `assets/js/data/hanzi-data.js` is the stroke data, **generated** by `tools/build_data.mjs` (it includes every graph hub). The script also verifies that every highlighted or missing stroke range matches the radical's real components.
+- `assets/font/wing-pinyin-grammar.woff2` is a subset of `WingSansPutonghuaPinyin.woff2` (the full font draws pinyin above every character) with only the characters in the grammar data. Rebuild it after adding grammar text: `pyftsubset WingSansPutonghuaPinyin.woff2 --text-file=chars.txt --layout-features='*' --flavor=woff2 --output-file=wing-pinyin-grammar.woff2`.
 - `assets/css/fonts.css` is a subset of the LXGW WenKai font, **generated** by `tools/subset_font.py`. Re-run it after adding new Chinese text.
 
 ```sh
@@ -119,3 +120,4 @@ python3 site/tools/subset_font.py LXGWWenKai-Regular.ttf LXGWWenKai-Medium.ttf
 - Stroke outlines and medians, and the character meanings on the vocabulary hover cards: [Make Me a Hanzi](https://github.com/skishore/makemeahanzi) (Arphic Public License / LGPL)
 - Handwriting quiz: [Hanzi Writer](https://hanziwriter.org) (MIT), vendored in `assets/vendor/`
 - Chinese font: [LXGW WenKai](https://github.com/lxgw/LxgwWenKai) (SIL OFL 1.1)
+- Pinyin-on-top font for the grammar rules: [Wing Sans Putonghua Pinyin](https://github.com/Wing-Font/wing-sans-chinese) (SIL OFL 1.1)
