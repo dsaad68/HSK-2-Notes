@@ -57,7 +57,7 @@
 
   /* ---------------- store ---------------- */
   const KEY = "hsk2-radicals-v1";
-  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, expr: {}, vocab: {}, settings: { theme: "light", sound: false, speed: 1, atlas: "lessons", examMode: "learn", showMeaning: false } });
+  const blank = () => ({ v: 1, studied: {}, sets: {}, comp: {}, course: {}, expr: {}, grammar: {}, vocab: {}, settings: { theme: "light", sound: false, speed: 1, atlas: "lessons", examMode: "learn", showMeaning: false } });
   let state = blank();
   try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(blank(), JSON.parse(raw)); state.settings = Object.assign(blank().settings, state.settings); } catch (e) { /* storage unavailable */ }
   // Keep several open tabs in sync (otherwise one tab would overwrite another's progress).
@@ -79,6 +79,11 @@
     },
     recordExpr(n, score, total) {
       const s = (state.expr[n] = state.expr[n] || { best: 0, tries: 0 });
+      s.tries++; s.last = score; s.total = total; s.best = Math.max(s.best, score); s.at = Date.now(); this.save();
+    },
+    recordGrammar(n, score, total) {
+      const g = (state.grammar = state.grammar || {});
+      const s = (g[n] = g[n] || { best: 0, tries: 0 });
       s.tries++; s.last = score; s.total = total; s.best = Math.max(s.best, score); s.at = Date.now(); this.save();
     },
     reset() { state = blank(); this.save(); }
@@ -292,6 +297,9 @@
     [/^\/vocab\/?$/, "vocab"],
     [/^\/vocab\/quiz\/?$/, "vocabQuiz"],
     [/^\/vocab\/(.+?)\/?$/, "vocabGraph"],
+    [/^\/grammar\/?$/, "gram"],
+    [/^\/grammar\/review\/?$/, "gramReview"],
+    [/^\/grammar\/(\d+)(?:\/(\d+))?\/?$/, "gramLesson"],
     [/^\/expressions\/?$/, "expr"],
     [/^\/expressions\/review\/?$/, "exprReview"],
     [/^\/expressions\/(\d+)\/?$/, "exprLesson"],

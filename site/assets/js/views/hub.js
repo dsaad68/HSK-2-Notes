@@ -13,11 +13,15 @@
     title: "",
     render() {
       const S = window.HSK_SECTIONS;
-      const rs = App.stats(), xs = App.expr.stats(), vs = App.vocab.stats();
+      const rs = App.stats(), xs = App.expr.stats(), vs = App.vocab.stats(), gs = App.grammar.stats();
       const meta = {
         vocab: `<div class="toc-meta">
             <span class="chip chip-accent">${vs.hubs} graphs</span><span class="chip">${App.vocab.WORDS.size} words</span>
             <span class="toc-prog"><i style="--w:${((vs.seen / vs.hubs) * 100).toFixed(1)}%"></i></span><span class="toc-prog-l">${vs.seen}/${vs.hubs} graphs opened${vs.quiz ? ` · quiz best ${vs.quiz.best}/${vs.quiz.total || 10}` : ""}</span>
+          </div>`,
+        grammar: `<div class="toc-meta">
+            <span class="chip chip-accent">${gs.lessons} lessons</span><span class="chip">${gs.points} patterns</span>
+            <span class="toc-prog"><i style="--w:${((gs.tried / gs.lessons) * 100).toFixed(1)}%"></i></span><span class="toc-prog-l">${gs.tried}/${gs.lessons} lesson quizzes tried${gs.perfect ? ` · ${gs.perfect} perfect` : ""}</span>
           </div>`,
         expressions: `<div class="toc-meta">
             <span class="chip chip-accent">${xs.lessons} lessons</span><span class="chip">${App.expr.ALL.length} expressions</span>
@@ -108,6 +112,8 @@
         const pick = ["机", "开", "午", "门", "色"].map((c) => App.vocab.HUB.get(c)).filter(Boolean);
         App.vocab.showcase(vv, pick, { size: "sm", ink: false, dots: false, hold: 2600 });
       }
+      const gv = $('.toc-row[data-id="grammar"] .toc-vis', root);
+      if (gv) App.grammar.showcase(gv);
       const rv = $('.toc-row[data-id="radicals"] .toc-vis', root);
       if (rv) this.radicals(rv);
     },

@@ -363,7 +363,7 @@
       count.textContent = "Done";
       fb.classList.remove("is-on"); fb.innerHTML = ""; next.hidden = true;
       const pct = score / qs.length;
-      const msg = pct === 1 ? "Perfect! Every piece in the right place." : pct >= 0.6 ? "Nice work. Look again at the one you missed." : "Have another look at the builders above, then try again.";
+      const msg = pct === 1 ? (o.perfectMsg || "Perfect! Every piece in the right place.") : pct >= 0.6 ? "Nice work. Look again at the one you missed." : (o.retryMsg || "Have another look at the builders above, then try again.");
       const el = html(`<div class="qz-result">
         ${App.ring(pct, `${score}<small style="font-size:13px;color:var(--ink-4)">/${qs.length}</small>`, pct === 1 ? "jade" : pct >= 0.6 ? "gold" : "")}
         <div><h3 class="title-md">${pct === 1 ? "全对！" : "加油！"} <span class="muted" style="font-size:.7em">${pct === 1 ? "quán duì · all correct" : "jiāyóu · keep going"}</span></h3><p>${msg}</p>
